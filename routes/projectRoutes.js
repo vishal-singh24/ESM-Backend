@@ -1,6 +1,6 @@
 const express = require("express");
 const { createProject, assignEmployee } = require("../controllers/projectController");
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../middlewares/authMiddleware");
 const router = express.Router();
 
 router.post("/", authMiddleware("admin"), createProject);
