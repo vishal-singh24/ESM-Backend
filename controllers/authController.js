@@ -28,14 +28,56 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = async (req, res) => {
+// exports.login = async (req, res) => {
+//   const { email, password } = req.body;
+//   if (!email || !password) {
+//     return res.status(400).json({ message: "Email and Password required" });
+//   }
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user || !(await bcrypt.compare(password, user.password))) {
+//       return res.status(401).json({ message: "Invalid Credentials" });
+//     }
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "1d" }
+//     );
+//     res.status(200).json({ message: "Login successful", token });
+//   } catch (error) {
+//     return res.status(500).json({ message: error.message });
+//   }
+// };
+
+exports.loginEmployee = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: "Email and Password required" });
   }
   try {
     const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || user.role !== 'employee' || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Invalid Credentials" });
+    }
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.loginAdmin = async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and Password required" });
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (!user || user.role !== 'admin' || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
     const token = jwt.sign(
@@ -48,6 +90,7 @@ exports.login = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 exports.resetPassword = async (req, res) => {
   const { email, newPassword } = req.body;
