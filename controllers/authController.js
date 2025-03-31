@@ -3,8 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-  if (!name || !email || !password || !role) {
+  const { name, username, password, role } = req.body;
+  if (!name || !username || !password || !role) {
     return res.status(400).json({ message: "All Fields are required" });
   }
 
@@ -12,12 +12,12 @@ exports.register = async (req, res) => {
     return res.status(400).json({ message: "Invalid Role" });
   }
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(409).json({ message: "User already exists" });
     }
     //const hashedPassword = bcrypt.hash(password, 10);
-    const newUser = User({ name, email, password, role });
+    const newUser = User({ name, username, password, role });
     await newUser.save();
 
    
@@ -29,12 +29,12 @@ exports.register = async (req, res) => {
 };
 
 // exports.login = async (req, res) => {
-//   const { email, password } = req.body;
-//   if (!email || !password) {
-//     return res.status(400).json({ message: "Email and Password required" });
+//   const { username, password } = req.body;
+//   if (!username || !password) {
+//     return res.status(400).json({ message: "username and Password required" });
 //   }
 //   try {
-//     const user = await User.findOne({ email });
+//     const user = await User.findOne({ username });
 //     if (!user || !(await bcrypt.compare(password, user.password))) {
 //       return res.status(401).json({ message: "Invalid Credentials" });
 //     }
@@ -50,12 +50,12 @@ exports.register = async (req, res) => {
 // };
 
 exports.loginEmployee = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and Password required" });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: "username and Password required" });
   }
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ username });
     if (!user || user.role !== 'employee' || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
@@ -71,12 +71,12 @@ exports.loginEmployee = async (req, res) => {
 };
 
 exports.loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and Password required" });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: "username and Password required" });
   }
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ username });
     if (!user || user.role !== 'admin' || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
@@ -93,12 +93,12 @@ exports.loginAdmin = async (req, res) => {
 
 
 exports.resetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { username, newPassword } = req.body;
   try {
-    if (!email||!newPassword) {
-        return res.status(400).json({ message: "Email and NewPassword are required" });
+    if (!username||!newPassword) {
+        return res.status(400).json({ message: "username and NewPassword are required" });
     }
-    const user = await User.findOne({email});
+    const user = await User.findOne({username});
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
