@@ -18,7 +18,7 @@ const authMiddleware = (role) => async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (role && req.user.role !== role) {
+    if (role && !role.includes(req.user.role) ) {
       return res.status(403).json({ message: "Access denied" });
     }
     next();
