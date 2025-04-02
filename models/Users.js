@@ -3,14 +3,14 @@ const bcrypt = require("bcrypt");
 
 const UserSchema = new mongoose.Schema({
   name: String,
-  username: { type: String, unique: true, required: true },
+  empId: { type: String, unique: true, required: true },
   email: { type: String, default: null },
   mobileNo: {
     type: String,
     default: null,
     validate: {
       validator: function (v) {
-        return /^\+91[0-9]{10}$/.test(v); 
+        return v === null ||/^\+91[0-9]{10}$/.test(v); 
       },
       message: (props) => `${props.value} is not a valid Indian mobile number!`,
     },
@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.pre("save", function (next) {
-  if (!this.mobileNo.startsWith("+91")) {
+  if (this.mobileNo && !this.mobileNo.startsWith("+91")) {
     this.mobileNo = "+91" + this.mobileNo;
   }
   next();
