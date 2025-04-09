@@ -1,7 +1,7 @@
 const User = require("../models/Users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const {uploadImage}=require('../utils/uploadHelper');
+const { uploadImage } = require("../utils/uploadHelper");
 
 exports.registerUser = async (req, res) => {
   try {
@@ -19,8 +19,8 @@ exports.registerUser = async (req, res) => {
       return res.status(409).json({ message: "User already exists" });
     }
 
-    let imageUrl =  await uploadImage(req);
-    
+    let imageUrl = await uploadImage(req);
+
     //const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
@@ -60,7 +60,8 @@ exports.loginEmployee = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-    res.status(200).json({ message: "Login successful", token });
+
+    return res.status(200).json({ message: "Login successful" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -85,7 +86,13 @@ exports.loginAdmin = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
-    res.status(200).json({ message: "Login successful", token });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 1 * 24 * 60 * 60 * 1000, // 1d in miliseconds
+    });
+    return res.status(200).json({ message: "Login successful" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
