@@ -1,5 +1,23 @@
 const mongoose = require("mongoose");
 
+const WaypointSchema = new mongoose.Schema(
+  {
+    coordinates: {
+      type: { type: String, default: "Point" },
+      coordinates: { type: [Number], required: true },
+    },
+    timestamp: { type: Date, default: Date.now },
+    notes: { type: String },
+    images: [{ type: String }],
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { _id: true }
+);
+
 const ProjectSchema = new mongoose.Schema({
   projectId: { type: String, unique: true },
   circle: { type: String, required: true },
@@ -7,6 +25,7 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String, default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  waypoints: [WaypointSchema]
 });
 
 ProjectSchema.pre("save", async function (next) {
@@ -17,4 +36,5 @@ ProjectSchema.pre("save", async function (next) {
   next();
 });
 
+WaypointSchema.index({ coordinates: "2dsphere" });
 module.exports = mongoose.model("Project", ProjectSchema);
