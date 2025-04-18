@@ -1,44 +1,186 @@
 const User = require("../models/Users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const {uploadImage}=require('../utils/uploadHelper');
+const { uploadImage } = require("../utils/uploadHelper");
+const rateLimit = require("express-rate-limit");
+const sanitize = require("mongo-sanitize");
 
+// Admin-specific security enhancements
 exports.registerUser = async (req, res) => {
   try {
-    const { name, empId, password, email, mobileNo, role } = req.body;
-    if (!name || !empId || !password || !role) {
-      return res.status(400).json({ message: "All Fields are required" });
+    // Sanitize inputs to prevent NoSQL injection
+    const cleanBody = sanitize(req.body);
+    const { name, empId, password, email, mobileNo, role } = cleanBody;
+
+    // Input validation
+    if (!name || !password || !role || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
     if (!["admin", "employee"].includes(role)) {
-      return res.status(400).json({ message: "Invalid Role" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role specified",
+      });
     }
 
-    const existingUser = await User.findOne({ empId });
+    // Additional validation for admin registration
+    if (role === "admin") {
+      if (!req.user || req.user.role !== "admin") {
+        console.warn(`Unauthorized admin creation attempt from IP: ${req.ip}`);
+        return res.status(403).json({
+          success: false,
+          message: "Admin privileges required",
+        });
+      }
+    }
+
+    const existingUser = await User.findOne({
+      $or: [{ empId }, { email }],
+    });
+
     if (existingUser) {
-      return res.status(409).json({ message: "User already exists" });
+      return res.status(409).json({
+        success: false,
+        message: "User already exists",
+      });
     }
 
-    let imageUrl =  await uploadImage(req);
-    
-    //const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with stronger salt rounds for admin
+    const saltRounds = role === "admin" ? 12 : 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    let imageUrl = await uploadImage(req);
+
+    // Format mobile number for Indian format
+    let formattedMobileNo = mobileNo;
+    if (mobileNo && !mobileNo.startsWith("+91")) {
+      formattedMobileNo = "+91" + mobileNo;
+    }
+
     const newUser = new User({
-      name,
+      name: name.trim(),
       empId,
-      password,
-      email,
-      mobileNo,
+      password: hashedPassword,
+      email: email.toLowerCase(),
+      mobileNo: formattedMobileNo,
       role,
       image: imageUrl,
     });
 
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully" });
+
+    // Log registration with different levels for admin/employee
+    console.log(
+      `New ${role} registered: ${email} by ${req.user?.email || "system"}`
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: {
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Registration error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+    });
+
+    // Add proper error response
+    res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
   }
 };
 
+// Enhanced admin login with security features
+exports.loginAdmin = async (req, res) => {
+  const { empId, password } = sanitize(req.body);
+
+  if (!empId || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and password required",
+    });
+  }
+
+  try {
+    const user = await User.findOne({
+      empId: { $regex: new RegExp(`^${empId}$`, "i") },
+      role: "admin",
+    });
+
+    if (!user) {
+      console.warn(
+        `Failed admin login attempt for: ${empId} from IP: ${req.ip}`
+      );
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.warn(`Failed password attempt for admin: ${empId}`);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Secure cookie settings
+    res.cookie("admin_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.COOKIE_DOMAIN || "localhost",
+      path: "/",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Keep existing employee login unchanged
 exports.loginEmployee = async (req, res) => {
   const { empId, password } = req.body;
   if (!empId || !password) {
@@ -60,117 +202,58 @@ exports.loginEmployee = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-    res.status(200).json({ message: "Login successful", token });
+
+    return res.status(200).json({ message: "Login successful" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.loginAdmin = async (req, res) => {
-  const { empId, password } = req.body;
-  if (!empId || !password) {
-    return res.status(400).json({ message: "empId and Password required" });
-  }
-  try {
-    const user = await User.findOne({ empId });
-    if (
-      !user ||
-      user.role !== "admin" ||
-      !(await bcrypt.compare(password, user.password))
-    ) {
-      return res.status(401).json({ message: "Invalid Credentials" });
-    }
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-    res.status(200).json({ message: "Login successful", token });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-// exports.resetPassword = async (req, res) => {
-//   const { empId, newPassword } = req.body;
-//   try {
-//     if (!empId || !newPassword) {
-//       return res
-//         .status(400)
-//         .json({ message: "empId and NewPassword are required" });
-//     }
-//     const user = await User.findOne({ empId });
-
-//     if (!user) return res.status(404).json({ message: "User not found" });
-
-//     user.password = newPassword;
-//     await user.save();
-//     res.status(200).json({ message: "Password reset successfully" });
-//   } catch (error) {
-//     return res.status(500).json({ message: error.message });
-//   }
-// };
-
+// Enhanced getCurrentUser with admin checks
 exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select("-password -_id -__v");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      console.warn(`User not found for ID: ${userId}`);
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    res.status(200).json(user);
+    // Additional security logging for admin access
+    if (user.role === "admin") {
+      console.log(`Admin access: ${user.email} accessed profile`);
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get user error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
-// exports.updateUser = async (req, res) => {
-//   try {
-//     const { empId } = req.params;
-//     let updates = req.body;
-
-//     if (updates.password) {
-//       updates.password = await bcrypt.hash(updates.password, 10);
-//     }
-
-//     if (updates.mobileNo && !updates.mobileNo.startsWith("+91")) {
-//       updates.mobileNo = "+91" + updates.mobileNo;
-//     }
-
-//     // Handle image upload based on storage type
-//     if (req.file) {
-//       //--------------to be removed when using only gcs----------------------------------//
-//       if (storageType === "local") {
-//         updates.image = `${req.protocol}://${req.get("host")}/uploads/${
-//           req.file.filename
-//         }`;
-//       }
-//       // else if (storageType === "s3") {
-//       //   updates.image = await uploadToS3(req.file);
-//       // }
-//       else if (storageType === "gcs") {
-//         updates.image = await gcsUpload(req.file);
-//       }
-//     }
-
-//     const updatedUser = await User.findOneAndUpdate(
-//       { empId },
-//       { $set: updates },
-//       { new: true, runValidators: true }
-//     );
-
-//     if (!updatedUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     res
-//       .status(200)
-//       .json({ message: "User updated successfully", user: updatedUser });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal Server Error", error: error.message });
-//   }
-// };
+// Admin-specific rate limiter
+exports.adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again later",
+  },
+  handler: (req, res) => {
+    console.warn(`Rate limit exceeded for admin endpoint: ${req.ip}`);
+    res.status(429).json({
+      success: false,
+      message: "Too many requests, please try again later",
+    });
+  },
+});

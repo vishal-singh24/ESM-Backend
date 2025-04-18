@@ -1,6 +1,6 @@
 const express = require("express");
 const { updateUser } = require("../controllers/userController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 
 const router = express.Router();
@@ -11,4 +11,5 @@ router.patch(
   upload.single("image"),
   updateUser
 );
+
 module.exports = router;
