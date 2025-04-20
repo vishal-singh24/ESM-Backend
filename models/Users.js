@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
     default: null,
     validate: {
       validator: function (v) {
-        return v === null ||/^\+91[0-9]{10}$/.test(v); 
+        return v === null ||/^(\+91)?[0-9]{10}$/.test(v); 
       },
       message: (props) => `${props.value} is not a valid Indian mobile number!`,
     },
