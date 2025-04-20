@@ -18,6 +18,7 @@ exports.registerUser = async (req, res) => {
         success: false,
         message: "All fields are required",
       });
+    }
     // const { name, empId, password, email, mobileNo, role } = req.body;
     // if (!name || !empId || !password || !role) {
     //   return res.status(400).json({ message: "Name,EmpId, Password and Role are required fields" });
@@ -52,26 +53,14 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    // Hash password with stronger salt rounds for admin
-    const saltRounds = role === "admin" ? 12 : 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
     let imageUrl = await uploadImage(req);
-
-    // Format mobile number for Indian format
-    let formattedMobileNo = mobileNo;
-    if (mobileNo && !mobileNo.startsWith("+91")) {
-      formattedMobileNo = "+91" + mobileNo;
-    }
-
-    
 
     const newUser = new User({
       name: name.trim(),
       empId,
-      password: hashedPassword,
+      password,
       email: email.toLowerCase(),
-      mobileNo: formattedMobileNo,
+      mobileNo,
       role,
       image: imageUrl,
     });
@@ -92,7 +81,7 @@ exports.registerUser = async (req, res) => {
         role: newUser.role,
       },
     });
-  } }catch (error) {
+  } catch (error) {
     console.error("Registration error details:", {
       message: error.message,
       stack: error.stack,
