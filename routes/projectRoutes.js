@@ -11,22 +11,248 @@ const {
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-router.post("/create-project", authMiddleware("admin"), createProject);
-router.post("/:projectId/assign", authMiddleware("admin"), assignEmployee);
-router.get("/my-projects", authMiddleware("employee"), getMyProjects);
-router.get("/all-projects", authMiddleware(["admin"]), allProjects);
 
+/**
+ * @swagger
+ * /api/projects/create-project:
+ *   post:
+ *     summary: Create a new project
+ *     description: Create a new project with division, cirlce and description. Only admin can create projects.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - circle
+ *               - division
+ *             properties:
+ *               projectId:
+ *                 type: string
+ *                 description: Unique identifier for the project
+ *               circle:
+ *                 type: string
+ *                 description: Circle of the project
+ *               division:
+ *                 type: string
+ *                 description: Division of the project
+ *               description:
+ *                 type: string
+ *                 description: Description of the project
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ *       400:
+ *         description: Circle and Division fields are required or Project with this name already exists
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       403:
+ *         description: Forbidden - Only admin can create projects
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/create-project", authMiddleware("admin"), createProject);
+/**
+ * @swagger
+ * /api/projects/{projectId}/assign:
+ *   post:
+ *     summary: Assign an employee to a project
+ *     description: Assign an employee to a project by their empId. Only admin can assign employees.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: projectId
+ *         in: path
+ *         required: true
+ *         description: ID of the project to which the employee will be assigned
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - empId
+ *             properties:
+ *               empId:
+ *                 type: string
+ *                 description: Employee ID of the user to be assigned to the project
+ *     responses:
+ *       200:
+ *         description: Employee assigned successfully
+ *       400:
+ *         description: Employee ID (empId) is required or Employee already assigned or Project not found or Employee not found or user doesn't have employee role
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       500: 
+ *         description: Internal server error
+ */
+router.post("/:projectId/assign", authMiddleware("admin"), assignEmployee);
+/**
+ * @swagger
+ * /api/projects/my-projects:
+ *   get:
+ *     summary: Get all projects assigned to the logged-in employee
+ *     description: Retrieve all projects assigned to the logged-in employee. Only employees can access this endpoint.
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of projects assigned to the employee
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/my-projects", authMiddleware("employee"), getMyProjects);
+
+
+
+/**
+ * @swagger
+ * /api/projects/all-projects:
+ *   get:
+ *     summary: Get all projects
+ *     description: Retrieve all projects. Only admin can access this endpoint.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all projects
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/all-projects",authMiddleware(["admin"]),allProjects);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/waypoints:
+ *   post:
+ *     summary: Add a waypoint to a project
+ *     description: Add a waypoint to a project by its ID. Only employees can add waypoints.
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - projectId: projectId
+ *         in: path
+ *         required: true
+ *         description: ID of the project to which the waypoint will be added
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - location
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the waypoint
+ *               location:
+ *                 type: string
+ *                 description: Location of the waypoint
+ */
 router.post("/:projectId/waypoints", authMiddleware("employee"), addWaypoint);
-router.get(
-  "/:projectId/waypoints",
-  authMiddleware("employee"),
-  getProjectWaypoints
-);
-router.patch(
-  "/:projectId/waypoints/:waypointId",
-  authMiddleware("employee"),
-  updateWaypoint
-);
+
+
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/waypoints:
+ *   get:
+ *     summary: Get all waypoints of a project
+ *     description: Retrieve all waypoints of a project by project ID. When employee will access this end-point then waypoints created by him/her will be shown and if this end-points is accessed by admin then all the waypoints will be shown.
+ *     tags: [Employee,Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: projectId
+ *         in: path
+ *         required: true
+ *         description: ID of the project whose waypoints will be retrieved
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of waypoints for the project
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/:projectId/waypoints", authMiddleware("employee"), getProjectWaypoints);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/waypoints/{waypointId}:
+ *   patch:
+ *     summary: Update a waypoint of a project
+ *     description: Update a waypoint of a project by its ID. Only employees can update waypoints.
+ *     tags:
+ *       - Employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         description: ID of the project whose waypoint will be updated
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: waypointId
+ *         required: true
+ *         description: ID of the waypoint to be updated
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the waypoint
+ *               location:
+ *                 type: string
+ *                 description: Location of the waypoint
+ *               coordinates:
+ *                 type: array
+ *                 items:
+ *                   type: number
+ *                 description: Coordinates of the waypoint
+ *     responses:
+ *       200:
+ *         description: Waypoint updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Project or waypoint not found
+ *       500:
+ *         description: Internal server error
+ */
+
+router.patch("/:projectId/waypoints/:waypointId", authMiddleware("employee"), updateWaypoint); 
 
 // Project routes with correct middleware import
 router.post("/create-project", authMiddleware(["admin"]), createProject);

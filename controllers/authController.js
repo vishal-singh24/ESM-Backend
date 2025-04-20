@@ -18,7 +18,10 @@ exports.registerUser = async (req, res) => {
         success: false,
         message: "All fields are required",
       });
-    }
+    // const { name, empId, password, email, mobileNo, role } = req.body;
+    // if (!name || !empId || !password || !role) {
+    //   return res.status(400).json({ message: "Name,EmpId, Password and Role are required fields" });
+    // }
 
     if (!["admin", "employee"].includes(role)) {
       return res.status(400).json({
@@ -61,6 +64,8 @@ exports.registerUser = async (req, res) => {
       formattedMobileNo = "+91" + mobileNo;
     }
 
+    
+
     const newUser = new User({
       name: name.trim(),
       empId,
@@ -87,7 +92,7 @@ exports.registerUser = async (req, res) => {
         role: newUser.role,
       },
     });
-  } catch (error) {
+  } }catch (error) {
     console.error("Registration error details:", {
       message: error.message,
       stack: error.stack,

@@ -3,10 +3,10 @@ const User = require("../models/Users");
 
 exports.createProject = async (req, res) => {
   try {
-    const { projectId, circle, division } = req.body;
+    const { projectId, circle, division,description } = req.body;
 
     if (!circle || !division) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Circle and Division fields are required" });
     }
     const existingProject = await Project.findOne({ projectId });
     if (existingProject) {
@@ -19,10 +19,11 @@ exports.createProject = async (req, res) => {
       projectId,
       circle,
       division,
+      description,
       createdBy: req.user.id,
     });
 
-    res.status(201).json(project);
+    res.status(201).json({message:"Project Created successfully",project});
   } catch (error) {
     res.status(400).json({ message: "Error creating project", error });
   }
