@@ -3,14 +3,7 @@ const express = require("express");
 const connectDB = require("./config/dbconfig");
 const app = express();
 const cors = require("cors");
-<<<<<<< HEAD
 const helmet = require("helmet");
-=======
-const authRoutes = require("./routes/authRoutes");
-const projectRoutes = require("./routes/projectRoutes");
-const userRoutes = require("./routes/userRoutes");
-const PORT = process.env.PORT || 8000;
->>>>>>> a116953 (added swagger UI in this backend)
 const path = require("path");
 const { swaggerUI, swaggerSpec } = require("./swagger");
 
@@ -52,8 +45,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
-<<<<<<< HEAD
-=======
 
 app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
@@ -63,7 +54,6 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal server error",
   });
 });
->>>>>>> a116953 (added swagger UI in this backend)
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
