@@ -3,10 +3,12 @@ const User = require("../models/Users");
 
 exports.createProject = async (req, res) => {
   try {
-    const { projectId, circle, division,description } = req.body;
+    const { projectId, circle, division, description } = req.body;
 
     if (!circle || !division) {
-      return res.status(400).json({ message: "Circle and Division fields are required" });
+      return res
+        .status(400)
+        .json({ message: "Circle and Division fields are required" });
     }
     const existingProject = await Project.findOne({ projectId });
     if (existingProject) {
@@ -23,7 +25,7 @@ exports.createProject = async (req, res) => {
       createdBy: req.user.id,
     });
 
-    res.status(201).json({message:"Project Created successfully",project});
+    res.status(201).json({ message: "Project Created successfully", project });
   } catch (error) {
     res.status(400).json({ message: "Error creating project", error });
   }
@@ -107,45 +109,76 @@ exports.getMyProjects = async (req, res) => {
 exports.addWaypoint = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { coordinates, notes, images } = req.body;
-    const employeeId = req.user._id;
+    const employeeId = req.user._id; // assumes auth middleware sets this
 
-    if (
-      !coordinates ||
-      !Array.isArray(coordinates) ||
-      coordinates.length !== 2
-    ) {
-      return res.status(400).json({
-        message: "Invalid coordinates format. Use [longitude, latitude]",
-      });
-    }
-
-    const newWaypoint = {
-      coordinates: {
-        type: "Point",
-        coordinates: coordinates,
-      },
-      notes: notes || "",
-      images: images || [],
-      createdBy: employeeId,
-    };
-
-    const updatedProject = await Project.findByIdAndUpdate(
-      projectId,
-      { $push: { waypoints: newWaypoint } },
-      { new: true }
-    ).populate("waypoints.createdBy", "name email");
-
-    if (!updatedProject) {
+    const project = await Project.findOne({projectId});
+    if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
+    const isAssigned = project.employees.some(
+      (id) => id.toString() === employeeId.toString()
+    );
+
+    if (!isAssigned) {
+      return res
+        .status(403)
+        .json({ message: "You are not assigned to this project" });
+    }
+
+    // Extract and validate all required fields
+    const {
+      name,
+      description,
+      distanceFromPrevious,
+      latitude,
+      longitude,
+      isStart,
+      isEnd,
+      poleDetails,
+      gpsDetails,
+    } = req.body;
+
+    if (
+      !name ||
+      description == null ||
+      distanceFromPrevious == null ||
+      latitude == null ||
+      longitude == null ||
+      isStart == null ||
+      isEnd == null ||
+      !Array.isArray(poleDetails) ||
+      !Array.isArray(gpsDetails)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All fields are required and must be valid" });
+    }
+
+    const waypoint = {
+      name,
+      description,
+      distanceFromPrevious,
+      latitude,
+      longitude,
+      isStart: Boolean(isStart),
+      isEnd: Boolean(isEnd),
+      poleDetails,
+      gpsDetails,
+      createdBy: employeeId,
+      timestamp: new Date(),
+    };
+
+    project.waypoints.push([waypoint]); // add as subarray
+    await project.save();
+
     res.status(201).json({
       message: "Waypoint added successfully",
-      waypoint: updatedProject.waypoints[updatedProject.waypoints.length - 1],
+      waypoint,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Add waypoint error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -154,7 +187,7 @@ exports.getProjectWaypoints = async (req, res) => {
     const { projectId } = req.params;
     const { role, _id: userId } = req.user;
 
-    const project = await Project.findOne({projectId});
+    const project = await Project.findOne({ projectId });
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
@@ -176,59 +209,59 @@ exports.getProjectWaypoints = async (req, res) => {
   }
 };
 
-exports.updateWaypoint = async (req, res) => {
-  try {
-    const { projectId, waypointId } = req.params;
-    const { coordinates, notes, images } = req.body;
-    const employeeId = req.user._id;
+// exports.updateWaypoint = async (req, res) => {
+//   try {
+//     const { projectId, waypointId } = req.params;
+//     const { coordinates, notes, images } = req.body;
+//     const employeeId = req.user._id;
 
-    if (!coordinates && !notes && !images) {
-      return res.status(400).json({ message: "No fields to update provided" });
-    }
+//     if (!coordinates && !notes && !images) {
+//       return res.status(400).json({ message: "No fields to update provided" });
+//     }
 
-    const updateFields = {};
-    if (coordinates) {
-      if (!Array.isArray(coordinates) || coordinates.length !== 2) {
-        return res.status(400).json({
-          message: "Invalid coordinates format. Use [longitude, latitude]",
-        });
-      }
-      updateFields["waypoints.$.coordinates"] = {
-        type: "Point",
-        coordinates: coordinates,
-      };
-    }
-    if (notes !== undefined) updateFields["waypoints.$.notes"] = notes;
-    if (images !== undefined) updateFields["waypoints.$.images"] = images;
+//     const updateFields = {};
+//     if (coordinates) {
+//       if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+//         return res.status(400).json({
+//           message: "Invalid coordinates format. Use [longitude, latitude]",
+//         });
+//       }
+//       updateFields["waypoints.$.coordinates"] = {
+//         type: "Point",
+//         coordinates: coordinates,
+//       };
+//     }
+//     if (notes !== undefined) updateFields["waypoints.$.notes"] = notes;
+//     if (images !== undefined) updateFields["waypoints.$.images"] = images;
 
-    const updatedProject = await Project.findOneAndUpdate(
-      {
-        _id: projectId,
-        "waypoints._id": waypointId,
-        "waypoints.createdBy": employeeId,
-      },
-      { $set: updateFields },
-      { new: true }
-    );
+//     const updatedProject = await Project.findOneAndUpdate(
+//       {
+//         _id: projectId,
+//         "waypoints._id": waypointId,
+//         "waypoints.createdBy": employeeId,
+//       },
+//       { $set: updateFields },
+//       { new: true }
+//     );
 
-    if (!updatedProject) {
-      return res.status(404).json({
-        message: "Project/waypoint not found or unauthorized to update",
-      });
-    }
+//     if (!updatedProject) {
+//       return res.status(404).json({
+//         message: "Project/waypoint not found or unauthorized to update",
+//       });
+//     }
 
-    const updatedWaypoint = updatedProject.waypoints.find(
-      (wp) => wp._id.toString() === waypointId
-    );
+//     const updatedWaypoint = updatedProject.waypoints.find(
+//       (wp) => wp._id.toString() === waypointId
+//     );
 
-    res.status(200).json({
-      message: "Waypoint updated successfully",
-      waypoint: updatedWaypoint,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+//     res.status(200).json({
+//       message: "Waypoint updated successfully",
+//       waypoint: updatedWaypoint,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 exports.allProjects = async (req, res) => {
   try {
