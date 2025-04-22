@@ -197,7 +197,7 @@ exports.loginEmployee = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    return res.status(200).json({ message: "Login successful" });
+    return res.status(200).json({ message: "Login successful" ,token});
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
