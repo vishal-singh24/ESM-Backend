@@ -251,9 +251,5 @@ router.get("/:projectId/waypoints", authMiddleware(["employee","admin"]), getPro
 
 router.patch("/:projectId/waypoints/:waypointId", authMiddleware("employee"), updateWaypoint); 
 
-// Project routes with correct middleware import
-router.post("/create-project", authMiddleware(["admin"]), createProject);
-router.post("/:projectId/assign", authMiddleware(["admin"]), assignEmployee);
-router.get("/my-projects", authMiddleware(["employee"]), getMyProjects);
 
 module.exports = router;
