@@ -31,9 +31,6 @@ const router = express.Router();
  *               - circle
  *               - division
  *             properties:
- *               projectId:
- *                 type: string
- *                 description: Unique identifier for the project
  *               circle:
  *                 type: string
  *                 description: Circle of the project
@@ -196,7 +193,7 @@ router.post("/:projectId/waypoints", authMiddleware("employee"), addWaypoint);
  *       500:
  *         description: Internal server error
  */
-router.get("/:projectId/waypoints", authMiddleware("employee"), getProjectWaypoints);
+router.get("/:projectId/waypoints", authMiddleware(["employee","admin"]), getProjectWaypoints);
 
 /**
  * @swagger

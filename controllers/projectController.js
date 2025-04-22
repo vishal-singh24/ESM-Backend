@@ -154,7 +154,7 @@ exports.getProjectWaypoints = async (req, res) => {
     const { projectId } = req.params;
     const { role, _id: userId } = req.user;
 
-    const project = await Project.findById(projectId);
+    const project = await Project.findOne({projectId});
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
