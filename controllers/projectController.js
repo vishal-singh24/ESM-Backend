@@ -109,56 +109,39 @@ exports.getMyProjects = async (req, res) => {
 exports.addWaypoint = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const employeeId = req.user._id; // assumes auth middleware sets this
+    const employeeId = req.user._id;
 
-    const project = await Project.findOne({projectId});
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
+    const project = await Project.findOne({ projectId });
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    // Check if employee is assigned to the project
+    if (!project.employees.includes(employeeId)) {
+      return res.status(403).json({ message: "Not assigned to this project" });
     }
 
-    const isAssigned = project.employees.some(
-      (id) => id.toString() === employeeId.toString()
-    );
-
-    if (!isAssigned) {
-      return res
-        .status(403)
-        .json({ message: "You are not assigned to this project" });
-    }
-
-    // Extract and validate all required fields
     const {
       name,
-      description,
-      distanceFromPrevious,
       latitude,
       longitude,
       isStart,
       isEnd,
-      poleDetails,
-      gpsDetails,
+      poleDetails = [],
+      gpsDetails = [],
     } = req.body;
 
+    // Validate required fields
     if (
       !name ||
-      description == null ||
-      distanceFromPrevious == null ||
       latitude == null ||
       longitude == null ||
       isStart == null ||
-      isEnd == null ||
-      !Array.isArray(poleDetails) ||
-      !Array.isArray(gpsDetails)
+      isEnd == null
     ) {
-      return res
-        .status(400)
-        .json({ message: "All fields are required and must be valid" });
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const waypoint = {
       name,
-      description,
-      distanceFromPrevious,
       latitude,
       longitude,
       isStart: Boolean(isStart),
@@ -167,18 +150,41 @@ exports.addWaypoint = async (req, res) => {
       gpsDetails,
       createdBy: employeeId,
       timestamp: new Date(),
+      pathOwner: isStart ? employeeId : null, 
     };
 
-    project.waypoints.push([waypoint]); // add as subarray
-    await project.save();
+    
+    if (project.waypoints.length === 0) {
+      waypoint.pathOwner = employeeId; 
+      project.waypoints.push([waypoint]);
+    }
 
-    res.status(201).json({
-      message: "Waypoint added successfully",
-      waypoint,
-    });
+    
+    else if (waypoint.isStart) {
+      waypoint.pathOwner = employeeId;
+      project.waypoints.push([waypoint]);
+    }
+
+    
+    else {
+      const lastPath = project.waypoints[project.waypoints.length - 1];
+      const lastPathOwner = lastPath[0].pathOwner; 
+
+      if (lastPathOwner.toString() === employeeId.toString()) {
+        lastPath.push(waypoint); 
+      } else {
+        return res.status(403).json({
+          message:
+            "You can only add to paths you started. Start a new path with `isStart: true`.",
+        });
+      }
+    }
+
+    await project.save();
+    res.status(201).json({ message: "Waypoint added successfully", waypoint });
   } catch (error) {
-    console.error("Add waypoint error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

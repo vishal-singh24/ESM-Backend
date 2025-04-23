@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const PoleDetailsSchema = new mongoose.Schema(
   {
-    poleNo: { type: Number, },
+    poleNo: { type: Number },
     existingOrNewProposed: { type: String, required: true },
     poleDiscription: { type: String, required: true },
 
@@ -54,9 +54,6 @@ const PoleDetailsSchema = new mongoose.Schema(
     vCrossArmClamp: { type: Number, default: 0 },
     xBressing: { type: Number, default: 0 },
     earthingCoil: { type: Number, default: 0 },
-
-
-    
   },
   { _id: false }
 );
@@ -159,6 +156,8 @@ const WaypointSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    pathOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { _id: true }
 );
