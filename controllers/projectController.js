@@ -193,25 +193,45 @@ exports.getProjectWaypoints = async (req, res) => {
     const { projectId } = req.params;
     const { role, _id: userId } = req.user;
 
-    const project = await Project.findOne({ projectId });
+    // Find project with populated employees if needed
+    const project = await Project.findOne({ projectId })
+      .select('waypoints employees')
+      .lean();
+
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (role === "employee" && !project.employees.includes(userId)) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to access this project" });
+    // Authorization check
+    if (role === "employee" && !project.employees.some(id => id.equals(userId))) {
+      return res.status(403).json({ 
+        message: "Not authorized to access this project" 
+      });
     }
 
-    const waypoints =
-      role === "admin"
-        ? project.waypoints
-        : project.waypoints.filter((wp) => wp.createdBy.equals(userId));
+    // Filter waypoints based on role
+    let filteredWaypoints;
+    if (role === "admin") {
+      // Admin gets all waypoints
+      filteredWaypoints = project.waypoints;
+    } else {
+      // Employee gets only their paths (entire paths they started)
+      filteredWaypoints = project.waypoints.filter(path => 
+        path.length > 0 && path[0].createdBy.equals(userId)
+      );
+    }
 
-    res.status(200).json({ waypoints });
+    res.status(200).json({ 
+      success: true,
+      waypoints: filteredWaypoints 
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching waypoints:', error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error",
+      error: error.message 
+    });
   }
 };
 
