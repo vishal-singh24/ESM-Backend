@@ -150,28 +150,21 @@ exports.addWaypoint = async (req, res) => {
       gpsDetails,
       createdBy: employeeId,
       timestamp: new Date(),
-      pathOwner: isStart ? employeeId : null, 
+      pathOwner: isStart ? employeeId : null,
     };
 
-    
     if (project.waypoints.length === 0) {
-      waypoint.pathOwner = employeeId; 
-      project.waypoints.push([waypoint]);
-    }
-
-    
-    else if (waypoint.isStart) {
       waypoint.pathOwner = employeeId;
       project.waypoints.push([waypoint]);
-    }
-
-    
-    else {
+    } else if (waypoint.isStart) {
+      waypoint.pathOwner = employeeId;
+      project.waypoints.push([waypoint]);
+    } else {
       const lastPath = project.waypoints[project.waypoints.length - 1];
-      const lastPathOwner = lastPath[0].pathOwner; 
+      const lastPathOwner = lastPath[0].pathOwner;
 
       if (lastPathOwner.toString() === employeeId.toString()) {
-        lastPath.push(waypoint); 
+        lastPath.push(waypoint);
       } else {
         return res.status(403).json({
           message:
@@ -195,7 +188,7 @@ exports.getProjectWaypoints = async (req, res) => {
 
     // Find project with populated employees if needed
     const project = await Project.findOne({ projectId })
-      .select('waypoints employees')
+      .select("waypoints employees")
       .lean();
 
     if (!project) {
@@ -203,9 +196,12 @@ exports.getProjectWaypoints = async (req, res) => {
     }
 
     // Authorization check
-    if (role === "employee" && !project.employees.some(id => id.equals(userId))) {
-      return res.status(403).json({ 
-        message: "Not authorized to access this project" 
+    if (
+      role === "employee" &&
+      !project.employees.some((id) => id.equals(userId))
+    ) {
+      return res.status(403).json({
+        message: "Not authorized to access this project",
       });
     }
 
@@ -216,21 +212,21 @@ exports.getProjectWaypoints = async (req, res) => {
       filteredWaypoints = project.waypoints;
     } else {
       // Employee gets only their paths (entire paths they started)
-      filteredWaypoints = project.waypoints.filter(path => 
-        path.length > 0 && path[0].createdBy.equals(userId)
+      filteredWaypoints = project.waypoints.filter(
+        (path) => path.length > 0 && path[0].createdBy.equals(userId)
       );
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       success: true,
-      waypoints: filteredWaypoints 
+      waypoints: filteredWaypoints,
     });
   } catch (error) {
-    console.error('Error fetching waypoints:', error);
-    res.status(500).json({ 
+    console.error("Error fetching waypoints:", error);
+    res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -315,3 +311,120 @@ exports.allProjects = async (req, res) => {
     });
   }
 };
+
+exports.getAllWaypointsEmployee = async (req, res) => {
+  try {
+    const { empId } = req.user;
+    const user = await User.findOne({ empId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Employee not found" });
+    }
+
+    // Fetch projects with populated waypoints
+    const projects = await Project.find({ employees: user._id }).populate({
+      path: "waypoints",
+      populate: { path: "createdBy", select: "empId name role email" }
+    });
+
+    // Step 1: Extract ALL complete segments with project info and date
+    const allSegments = [];
+    projects.forEach(project => {
+      const employeeWaypoints = project.waypoints.flat().filter(
+        wp => wp.createdBy?.empId === empId
+      );
+
+      let currentSegment = [];
+      employeeWaypoints.forEach(waypoint => {
+        if (waypoint.isStart) currentSegment = [waypoint];
+        else if (currentSegment.length > 0) currentSegment.push(waypoint);
+        if (waypoint.isEnd && currentSegment.length > 0) {
+          const segmentDate = new Date(waypoint.timestamp).toISOString().split('T')[0]; // Extract YYYY-MM-DD
+          allSegments.push({
+            projectId: project.projectId,
+            circle: project.circle,
+            division: project.division,
+            description: project.description,
+            segment: currentSegment,
+            date: segmentDate, // Store date for grouping
+            timestamp: waypoint.timestamp // For exact sorting
+          });
+          currentSegment = [];
+        }
+      });
+    });
+
+    // Step 2: Sort ALL segments by timestamp (newest first)
+    allSegments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Step 3: Group segments by date (newest first)
+    const dateGroups = {};
+    allSegments.forEach(segment => {
+      if (!dateGroups[segment.date]) {
+        dateGroups[segment.date] = [];
+      }
+      dateGroups[segment.date].push(segment);
+    });
+
+    // Step 4: Prepare final output (sorted dates -> projects -> segments)
+    const sortedDates = Object.keys(dateGroups).sort(
+      (a, b) => new Date(b) - new Date(a)
+    );
+    const result = [];
+    sortedDates.forEach(date => {
+      const projectsMap = new Map(); // Group segments by project for this date
+      dateGroups[date].forEach(segment => {
+        if (!projectsMap.has(segment.projectId)) {
+          projectsMap.set(segment.projectId, {
+            projectId: segment.projectId,
+            circle: segment.circle,
+            division: segment.division,
+            description: segment.description,
+            waypoints: []
+          });
+        }
+        projectsMap.get(segment.projectId).waypoints.push(
+          segment.segment.map(wp => ({
+            _id: wp._id,
+            name: wp.name,
+            description: wp.description,
+            distanceFromPrevious: wp.distanceFromPrevious,
+            latitude: wp.latitude,
+            longitude: wp.longitude,
+            isStart: wp.isStart,
+            isEnd: wp.isEnd,
+            image: wp.image,
+            poleDetails: wp.poleDetails,
+            gpsDetails: wp.gpsDetails,
+            timestamp: wp.timestamp,
+            createdBy: wp.createdBy ? { 
+              empId: wp.createdBy.empId, 
+              name: wp.createdBy.name,
+              role: wp.createdBy.role,
+              email: wp.createdBy.email
+            } : null,
+            pathOwner: wp.pathOwner
+          }))
+        );
+      });
+      // Add all projects for this date to the result
+      result.push(...Array.from(projectsMap.values()));
+    });
+
+    res.status(200).json({
+      success: true,
+      empId,
+      employeeName: user.name,
+      totalProjects: result.length, // Total project entries (may include same project multiple times)
+      projects: result
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch waypoints", 
+      error: error.message 
+    });
+  }
+};
+
+
+
