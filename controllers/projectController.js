@@ -312,6 +312,8 @@ exports.allProjects = async (req, res) => {
   }
 };
 
+
+
 exports.getAllWaypointsEmployee = async (req, res) => {
   try {
     const { empId } = req.user;
@@ -385,16 +387,17 @@ exports.getAllWaypointsEmployee = async (req, res) => {
         projectsMap.get(segment.projectId).waypoints.push(
           segment.segment.map(wp => ({
             _id: wp._id,
-            name: wp.name,
-            description: wp.description,
-            distanceFromPrevious: wp.distanceFromPrevious,
+            // name: wp.name,
+            // description: wp.description,
+            // distanceFromPrevious: wp.distanceFromPrevious,
             latitude: wp.latitude,
             longitude: wp.longitude,
             isStart: wp.isStart,
             isEnd: wp.isEnd,
             image: wp.image,
-            poleDetails: wp.poleDetails,
-            gpsDetails: wp.gpsDetails,
+            gpsDetails: Array.isArray(wp.gpsDetails) && wp.gpsDetails.length > 0 && wp.gpsDetails[0].feederName 
+  ? { feederName: wp.gpsDetails[0].feederName } 
+  : null,
             timestamp: wp.timestamp,
             createdBy: wp.createdBy ? { 
               empId: wp.createdBy.empId, 
@@ -402,7 +405,7 @@ exports.getAllWaypointsEmployee = async (req, res) => {
               role: wp.createdBy.role,
               email: wp.createdBy.email
             } : null,
-            pathOwner: wp.pathOwner
+            
           }))
         );
       });
@@ -414,7 +417,6 @@ exports.getAllWaypointsEmployee = async (req, res) => {
       success: true,
       empId,
       employeeName: user.name,
-      totalProjects: result.length, // Total project entries (may include same project multiple times)
       projects: result
     });
   } catch (error) {
