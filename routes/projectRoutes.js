@@ -7,10 +7,10 @@ const {
   getProjectWaypoints,
   updateWaypoint,
   allProjects,
+  getAllWaypointsEmployee,
 } = require("../controllers/projectController");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const router = express.Router();
-
 
 /**
  * @swagger
@@ -88,7 +88,7 @@ router.post("/create-project", authMiddleware("admin"), createProject);
  *         description: Employee ID (empId) is required or Employee already assigned or Project not found or Employee not found or user doesn't have employee role
  *       401:
  *         description: Unauthorized - Bearer token missing or invalid
- *       500: 
+ *       500:
  *         description: Internal server error
  */
 router.post("/:projectId/assign", authMiddleware("admin"), assignEmployee);
@@ -111,8 +111,6 @@ router.post("/:projectId/assign", authMiddleware("admin"), assignEmployee);
  */
 router.get("/my-projects", authMiddleware("employee"), getMyProjects);
 
-
-
 /**
  * @swagger
  * /api/projects/all-projects:
@@ -130,7 +128,7 @@ router.get("/my-projects", authMiddleware("employee"), getMyProjects);
  *       500:
  *         description: Internal server error
  */
-router.get("/all-projects",authMiddleware(["admin"]),allProjects);
+router.get("/all-projects", authMiddleware(["admin"]), allProjects);
 
 /**
  * @swagger
@@ -158,9 +156,11 @@ router.get("/all-projects",authMiddleware(["admin"]),allProjects);
  *               - name
  *               - latitude
  *               - longitude
- *               - poleDetails 
+ *               - poleDetails
  *               - gpsDetails
- *            
+ *               - isStart
+ *               - isEnd
+ *
  *             properties:
  *               name:
  *                 type: string
@@ -543,8 +543,6 @@ router.get("/all-projects",authMiddleware(["admin"]),allProjects);
  */
 router.post("/:projectId/waypoints", authMiddleware("employee"), addWaypoint);
 
-
-
 /**
  * @swagger
  * /api/projects/{projectId}/waypoints:
@@ -569,7 +567,11 @@ router.post("/:projectId/waypoints", authMiddleware("employee"), addWaypoint);
  *       500:
  *         description: Internal server error
  */
-router.get("/:projectId/waypoints", authMiddleware(["employee","admin"]), getProjectWaypoints);
+router.get(
+  "/:projectId/waypoints",
+  authMiddleware(["employee", "admin"]),
+  getProjectWaypoints
+);
 
 // /**
 //  * @swagger
@@ -625,7 +627,32 @@ router.get("/:projectId/waypoints", authMiddleware(["employee","admin"]), getPro
 //  *         description: Internal server error
 //  */
 
-// router.patch("/:projectId/waypoints/:waypointId", authMiddleware("employee"), updateWaypoint); 
+// router.patch("/:projectId/waypoints/:waypointId", authMiddleware("employee"), updateWaypoint);
 
+
+/**
+ * @swagger
+ * /api/projects/employee-waypoints:
+ *   get:
+ *     summary: Get all waypoints created by an employee across projects
+ *     description: Retrieve all waypoints created by the employee (empId) across all projects they are assigned to.
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of waypoints created by the employee across projects
+ *       401:  
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       404:
+ *         description: Employee not found with this empId
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/employee-waypoints",
+  authMiddleware("employee"),
+  getAllWaypointsEmployee
+);
 
 module.exports = router;
