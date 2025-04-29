@@ -34,7 +34,7 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
   const stream = blob.createWriteStream({
     resumable: false,
     contentType: file.mimetype,
-    public: true,
+    // public: true,
   });
 
   return new Promise((resolve, reject) => {
