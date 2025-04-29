@@ -13,7 +13,7 @@ const userRoutes = require("./routes/userRoutes");
 
 
 // Configure port
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8080;
 
 // Connect to database
 connectDB();
