@@ -1,21 +1,32 @@
 const User = require("../models/Users");
 const bcrypt = require("bcrypt");
-const { uploadImage } = require("../utils/uploadHelper");
+const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
+const { deleteImageFromCloudStorage } = require("../utils/cloudStorageHelper");
+const sanitize = require("mongo-sanitize");
 
 exports.updateUser = async (req, res) => {
   try {
     const { empId } = req.params;
-    let updates = req.body;
+    let updates = sanitize(req.body);
 
+    // Hash password if updating
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
 
+    // Format mobile number if updating
     if (updates.mobileNo && !updates.mobileNo.startsWith("+91")) {
       updates.mobileNo = "+91" + updates.mobileNo;
     }
 
-    updates.image = await uploadImage(req);
+    // Handle image upload only if a new image is provided
+    const imageUrl = await handleSingleImageUpload(req);
+    if (imageUrl) {
+      if (existingUser.image) {
+        await deleteImageFromCloudStorage(existingUser.image);
+      }
+      updates.image = newImageUrl;
+    }
 
     const updatedUser = await User.findOneAndUpdate(
       { empId },
@@ -24,15 +35,30 @@ exports.updateUser = async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "User details updated successfully", user: updatedUser });
+    res.status(200).json({
+      success: true,
+      message: "User details updated successfully",
+      user: {
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        mobileNo: updatedUser.mobileNo,
+        image: updatedUser.image,
+      },
+    });
   } catch (error) {
+    console.error("Error updating user:", error);
     res
       .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+      .json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
   }
 };

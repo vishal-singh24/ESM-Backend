@@ -1,6 +1,8 @@
 const Project = require("../models/Projects");
 const User = require("../models/Users");
 
+
+//controller function to create a new project(only admin can create a new project)
 exports.createProject = async (req, res) => {
   try {
     const { projectId, circle, division, description } = req.body;
@@ -31,6 +33,8 @@ exports.createProject = async (req, res) => {
   }
 };
 
+
+//controller function to assign an employee to a project(only admin can assign an employee to a project)
 exports.assignEmployee = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -76,6 +80,9 @@ exports.assignEmployee = async (req, res) => {
   }
 };
 
+
+//controller function to get all projects assigned to an employee
+//(only employee can get all projects assigned to him)
 exports.getMyProjects = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -106,6 +113,7 @@ exports.getMyProjects = async (req, res) => {
   }
 };
 
+//controller function to add a waypoint to a project(only employee can add a waypoint to a project)
 exports.addWaypoint = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -181,6 +189,8 @@ exports.addWaypoint = async (req, res) => {
   }
 };
 
+//controller function to get all waypoints of a project(only admin and employee can get all waypoints of a project)
+//(admin can get all waypoints of a project and employee can get only his waypoints)
 exports.getProjectWaypoints = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -285,6 +295,7 @@ exports.getProjectWaypoints = async (req, res) => {
 //   }
 // };
 
+//controller function to get all projects(only admin can get all projects)
 exports.allProjects = async (req, res) => {
   try {
     const projects = await Project.find()
@@ -314,6 +325,7 @@ exports.allProjects = async (req, res) => {
 
 
 
+//controller function to get all waypoints added by an employee)
 exports.getAllWaypointsEmployee = async (req, res) => {
   try {
     const { empId } = req.user;

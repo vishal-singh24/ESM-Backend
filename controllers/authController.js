@@ -1,14 +1,17 @@
 const User = require("../models/Users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { uploadImage } = require("../utils/uploadHelper");
+const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
 const rateLimit = require("express-rate-limit");
 const sanitize = require("mongo-sanitize");
 
+
 // Admin-specific security enhancements
+
+//controller function to register a new user(only admin can register a new user)
 exports.registerUser = async (req, res) => {
   try {
-    // Sanitize inputs to prevent NoSQL injection
+    // Sanitize inputs to prevent injection attacks
     const cleanBody = sanitize(req.body);
     const { name, empId, password, email, mobileNo, role } = cleanBody;
 
@@ -16,18 +19,14 @@ exports.registerUser = async (req, res) => {
     if (!name || !password || !role || !email) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required",
+        message: "Required fields are missing (name, password, role, email).",
       });
     }
-    // const { name, empId, password, email, mobileNo, role } = req.body;
-    // if (!name || !empId || !password || !role) {
-    //   return res.status(400).json({ message: "Name,EmpId, Password and Role are required fields" });
-    // }
 
     if (!["admin", "employee"].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid role specified",
+        message: "Invalid role specified. Only 'admin' or 'employee' are allowed.",
       });
     }
 
@@ -42,62 +41,60 @@ exports.registerUser = async (req, res) => {
       }
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ empId }, { email }],
-    });
-
+    // Check if the user already exists
+    const existingUser = await User.findOne({ $or: [{ empId }, { email }] });
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: "User already exists",
+        message: "User already exists with the provided empId or email.",
       });
     }
 
-    let imageUrl = await uploadImage(req);
+    // Handle image upload if available
+    const imageUrl = await handleSingleImageUpload(req);
 
+    // Create a new user object
     const newUser = new User({
       name: name.trim(),
       empId,
-      password,
+      password, // Assuming you're hashing the password before saving
       email: email.toLowerCase(),
       mobileNo,
       role,
-      image: imageUrl,
+      image: imageUrl, // Save the image URL to the DB
     });
 
+    // Save user to the database
     await newUser.save();
 
-    // Log registration with different levels for admin/employee
-    console.log(
-      `New ${role} registered: ${email} by ${req.user?.email || "system"}`
-    );
+    // Log the registration action (for auditing or tracking)
+    console.log(`${newUser.role} user registered: ${newUser.email}`);
 
+    // Respond with the success message
     res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} registered successfully.`,
       user: {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        image: newUser.image, // Optionally return image URL in response
       },
     });
   } catch (error) {
-    console.error("Registration error details:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code,
-    });
+    // Log error details for debugging
+    console.error("User registration error:", error);
 
-    // Add proper error response
+    // Handle errors gracefully and send response to the client
     res.status(500).json({
       success: false,
-      message: error.message || "Internal server error",
+      message: error.message || "Internal server error. Please try again later.",
     });
   }
 };
 
 // Enhanced admin login with security features
+//controller function to login an admin
 exports.loginAdmin = async (req, res) => {
   const { empId, password } = sanitize(req.body);
 
@@ -175,6 +172,7 @@ exports.loginAdmin = async (req, res) => {
 };
 
 // Keep existing employee login unchanged
+//controller function to login an employee
 exports.loginEmployee = async (req, res) => {
   const { empId, password } = req.body;
   if (!empId || !password) {
@@ -204,6 +202,7 @@ exports.loginEmployee = async (req, res) => {
 };
 
 // Enhanced getCurrentUser with admin checks
+//controller function to get the current user details
 exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.id;

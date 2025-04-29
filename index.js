@@ -4,13 +4,13 @@ const connectDB = require("./config/dbconfig");
 const app = express();
 const cors = require("cors");
 const helmet = require("helmet");
-const path = require("path");
 const { swaggerUI, swaggerSpec } = require("./swagger");
 
 // Import route modules
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const userRoutes = require("./routes/userRoutes");
+
 
 // Configure port
 const PORT = process.env.PORT || 8000;
@@ -38,13 +38,13 @@ app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Static files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
+
 
 app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
