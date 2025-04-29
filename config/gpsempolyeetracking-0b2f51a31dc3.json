@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gpsempolyeetracking",
+  "private_key_id": "0b2f51a31dc31b7ac418de81ca210a6531651309",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyPz+s+QxFiaQW\n0XqTLqva+JILmyL9v8ajn8nbQHd+pdLuCBeHXjudI9Fj2UNkQWzckbAmHJ8VxPsU\npMpjrNnGmYw92gou+wGgmBkYXfl/SADzBG42fB3vCnEphJa2EZdLo8J+l6rlvqWF\nj/3cWB3358aTUTiR0cn/fN9/6L932IQJOktFb39U3kwflC2cAZJUXZUnLwPR79uz\nZiAq39u2pigDVsEGyy6cZXAZZ9Cria5DAjqvbtkDkVQGCxVWFhduMcL+st90hodm\nKXvy0Bkigr3aKm4cg4+LUouaEv4PzWiUAgW8x/qbiDko6nHRr9tt363jCHwGcBjw\n3R1nG7v/AgMBAAECggEAQyS+KLs72ynpDMtl//FRvU9rPEH5IVrPSa2UTSnwmV1/\nojicHFrr29q1MoaR8z8N8dxTXVfkuT+VUQZuUrO26S/H+ziaI25cA5Gnyl0D8eU+\nrkxZ8943LGdjjz8pwnXH5y9NwYACWT7CfRhriUgMKek+DRpIU+2RyNLSIg2bqlnb\ncddxzATeRxp53uttE+i6zfmCFUAFk+4ush2IEs0+LGeJjDXOr0wFTUTwP0OTC/0a\nUlrCaLvzBACvSfLKeY04fJEmGSjeUFfmoTTgSRVXnHB2rf6pUJrEpAaT1TQS3W0g\nCo0WMYgXVrKkb95EcE2GBq/TwG0zyD/QWNcCHiIysQKBgQD2nGpGTh5o3d1Gb1CO\nA5ZqkdJ+nXpr5kEtSOy92nk9OnYsNtV93kfc0yupXcoyOVbNyXffbkVy5/24VON4\nhkyoHOfr3ipeJmVIflQ6toqqc1kpgXu87VL/86yVMju4sOtWwMMDTIj1t0+DS4tl\ntbgSN2U8SyjuYRIvQd7KWFU4+QKBgQC5CIbvw+1mRXhJMSh3AR/vfw2fdAqyKCQV\nAGYYHU4wIg5NiVX60TZhJq+89l99dC2F1nQLBJ5yGyo3cLc9nPJdOXENWQSd3zOZ\nwStHIDws3oKiZI1kMio7lqkwYrgb4tmCedtbrMBNFqPMWgJjwm9osDDFm2OcZcXa\nlAyIE8KStwKBgQDSQeHKN2ht+FtkZhvEOQLRsapKEXIC9Lm1JmvSIqcjsOh4Ifg7\n7HxQpiqfqDtwPrrnkVIGyTmlEm6b7qRSag6Jdru1uiFdTFcmS678sA3h7Z6jaKZb\nGeyeFN+cBMwuV4kO2iJqeaJ7/OJqCsq62QgrX9eMZHhtZY3fhMWyt0VR4QKBgCFB\nkhcX7Nw70jG9fxtcfWPrPwSQs7dvlYSczLy6z6nBBTcUXvq0jYSKkn1w/pqqvd/X\nOoYcb2nszfqm7JhLVBhDUblnbXf+fOS+nkurVIVv/KS5U9xVU9ff7UrAA30nmZZk\n1nM0ql9wmUIKT3Gkqad0O1/Y3N9oP1ZY06PFgWwjAoGBALoBD65/7F0bciJykJNR\nGZp+Vf059KSKSqTRZbLqUXY+ydGwnymuyNIvdvalT4WuokWP/AIi2tNqek8A5R7o\ndaxvaCMzodf18vnsdLT0Bep+367WnH15URv3nb2L67ck12+5Yg87FEP22Ft2NGrf\nJ6DzP1iPsScEEgUTFoovphfS\n-----END PRIVATE KEY-----\n",
+  "client_email": "ems-backend-service-account@gpsempolyeetracking.iam.gserviceaccount.com",
+  "client_id": "106439059957306468859",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/ems-backend-service-account%40gpsempolyeetracking.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

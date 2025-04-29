@@ -1,9 +1,25 @@
+
 const { Storage } = require('@google-cloud/storage');
+
+const bucketName = process.env.GCLOUD_BUCKET_NAME;
+const projectId = process.env.GCLOUD_PROJECT_ID;
+const keyFilename = process.env.GCLOUD_KEY_FILE;
+
+if (!bucketName) {
+  throw new Error("GCLOUD_BUCKET_NAME environment variable is not set.");
+}
+if (!projectId) {
+  throw new Error("GCLOUD_PROJECT_ID environment variable is not set.");
+}
+if (!keyFilename) {
+  throw new Error("GCLOUD_KEY_FILE environment variable is not set.");
+}
+
 const storage = new Storage({
-  projectId: process.env.GCLOUD_PROJECT_ID,
-  keyFilename: process.env.GCLOUD_KEY_FILE,
+  projectId,
+  keyFilename
 });
-const bucket = storage.bucket(process.env.GCLOUD_BUCKET_NAME);
+const bucket = storage.bucket(bucketName);
 
 const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png"];
 
@@ -23,7 +39,7 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
 
   return new Promise((resolve, reject) => {
     stream.on("finish", () => {
-      const publicUrl = `https://storage.googleapis.com/${process.env.GCLOUD_BUCKET_NAME}/${blob.name}`;
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
       resolve(publicUrl);
     });
     stream.on("error", reject);
