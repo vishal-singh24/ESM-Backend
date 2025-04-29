@@ -1,5 +1,5 @@
 # Use Node 18 slim image
-FROM node:18-slim
+FROM node:18
 
 # Set working directory
 WORKDIR /app
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm install --production
+RUN npm install 
 
 # Copy the rest of the project files
 COPY . .
