@@ -11,7 +11,7 @@ const rateLimiter = new RateLimiterMemory({
 // Main Middleware Function (Role-Based)
 const authMiddleware = (roles) => async (req, res, next) => {
   try {
-    await rateLimiter.consume(req.ip);
+    //await rateLimiter.consume(req.ip);
 
     const authHeader = req.header("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
