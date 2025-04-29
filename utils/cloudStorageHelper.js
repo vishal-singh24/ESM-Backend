@@ -34,13 +34,17 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
   const stream = blob.createWriteStream({
     resumable: false,
     contentType: file.mimetype,
-    // public: true,
   });
 
   return new Promise((resolve, reject) => {
-    stream.on("finish", () => {
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-      resolve(publicUrl);
+    stream.on("finish",async() => {
+      try {
+        await blob.makePublic();
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+        resolve(publicUrl);
+      } catch (err) {
+        reject(new Error("Failed to make image public: " + err.message));
+      }
     });
     stream.on("error", reject);
     stream.end(file.buffer);
