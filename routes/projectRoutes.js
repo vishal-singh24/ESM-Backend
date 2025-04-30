@@ -149,7 +149,7 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *     requestBody:
  *       required: true
  *       content:
- *         Multipart/form-data:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
