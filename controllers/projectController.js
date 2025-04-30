@@ -2,7 +2,6 @@ const Project = require("../models/Projects");
 const User = require("../models/Users");
 const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
 
-
 //controller function to create a new project(only admin can create a new project)
 exports.createProject = async (req, res) => {
   try {
@@ -140,9 +139,25 @@ exports.addWaypoint = async (req, res) => {
     const parsedLongitude = parseFloat(longitude);
     const parsedIsStart = isStart === "true" || isStart === true;
     const parsedIsEnd = isEnd === "true" || isEnd === true;
+    let parsedPoleDetails = [];
+    let parsedGpsDetails = [];
+    try {
+      parsedPoleDetails = JSON.parse(poleDetails);
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid JSON in poleDetails" });
+    }
 
-    const parsedPoleDetails = JSON.parse(poleDetails);
-    const parsedGpsDetails = JSON.parse(gpsDetails);
+    try {
+      parsedGpsDetails = JSON.parse(gpsDetails);
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid JSON in gpsDetails" });
+    }
+
+    if (!Array.isArray(parsedPoleDetails) || !Array.isArray(parsedGpsDetails)) {
+      return res
+        .status(400)
+        .json({ message: "poleDetails and gpsDetails must be arrays" });
+    }
 
     // Validate required fields
     if (
