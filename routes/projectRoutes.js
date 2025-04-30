@@ -187,6 +187,7 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *                 default: false
  *               image:
  *                 type: string
+ *                 format: binary
  *                 description: Image URL of the waypoint
  *               poleDetails:
  *                 type: array
