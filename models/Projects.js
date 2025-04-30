@@ -104,6 +104,7 @@ const GpsDetailSchema = new mongoose.Schema(
     discInsulatorPorcelain: { type: Number, default: 0 },
     dtrBaseChannel: { type: Number, default: 0 },
     dtrSpottingAngle: { type: Number, default: 0 },
+    dtrSpottingAngleWithClamp: { type: Number, default: 0 },
     dvcConductor: { type: Number, default: 0 },
     earthingConductor: { type: Number, default: 0 },
     elbow: { type: Number, default: 0 },

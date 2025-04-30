@@ -148,12 +148,16 @@ exports.addWaypoint = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    const imageUrl = await handleSingleImageUpload(req);
+    
+
     const waypoint = {
       name,
       latitude,
       longitude,
       isStart: Boolean(isStart),
       isEnd: Boolean(isEnd),
+      image: imageUrl,
       poleDetails,
       gpsDetails,
       createdBy: employeeId,
