@@ -149,7 +149,7 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         Multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -443,6 +443,9 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *                       type: number
  *                       default: 0
  *                     dtrSpottingAngle:
+ *                       type: number
+ *                       default: 0
+ *                     dtrSpottingAngleWithClamp:
  *                       type: number
  *                       default: 0
  *                     dvcConductor:
