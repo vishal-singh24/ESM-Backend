@@ -1,7 +1,6 @@
 const Project = require("../models/Projects");
 const User = require("../models/Users");
 
-
 //controller function to create a new project(only admin can create a new project)
 exports.createProject = async (req, res) => {
   try {
@@ -32,7 +31,6 @@ exports.createProject = async (req, res) => {
     res.status(400).json({ message: "Error creating project", error });
   }
 };
-
 
 //controller function to assign an employee to a project(only admin can assign an employee to a project)
 exports.assignEmployee = async (req, res) => {
@@ -79,7 +77,6 @@ exports.assignEmployee = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 //controller function to get all projects assigned to an employee
 //(only employee can get all projects assigned to him)
@@ -133,15 +130,23 @@ exports.addWaypoint = async (req, res) => {
       longitude,
       isStart,
       isEnd,
-      poleDetails = [],
-      gpsDetails = [],
+      poleDetails = "[]",
+      gpsDetails = "[]",
     } = req.body;
+
+    const parsedLatitude = parseFloat(latitude);
+    const parsedLongitude = parseFloat(longitude);
+    const parsedIsStart = isStart === "true" || isStart === true;
+    const parsedIsEnd = isEnd === "true" || isEnd === true;
+
+    const parsedPoleDetails = JSON.parse(poleDetails);
+    const parsedGpsDetails = JSON.parse(gpsDetails);
 
     // Validate required fields
     if (
       !name ||
-      latitude == null ||
-      longitude == null ||
+      isNaN(parsedLatitude) ||
+      isNaN(parsedLongitude) ||
       isStart == null ||
       isEnd == null
     ) {
@@ -149,20 +154,19 @@ exports.addWaypoint = async (req, res) => {
     }
 
     const imageUrl = await handleSingleImageUpload(req);
-    
 
     const waypoint = {
       name,
-      latitude,
-      longitude,
-      isStart: Boolean(isStart),
-      isEnd: Boolean(isEnd),
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      isStart: parsedIsStart,
+      isEnd: parsedIsEnd,
       image: imageUrl,
-      poleDetails,
-      gpsDetails,
+      poleDetails: parsedPoleDetails,
+      gpsDetails: parsedGpsDetails,
       createdBy: employeeId,
       timestamp: new Date(),
-      pathOwner: isStart ? employeeId : null,
+      pathOwner: parsedIsStart ? employeeId : null,
     };
 
     if (project.waypoints.length === 0) {
@@ -327,36 +331,38 @@ exports.allProjects = async (req, res) => {
   }
 };
 
-
-
 //controller function to get all waypoints added by an employee)
 exports.getAllWaypointsEmployee = async (req, res) => {
   try {
     const { empId } = req.user;
     const user = await User.findOne({ empId });
     if (!user) {
-      return res.status(404).json({ success: false, message: "Employee not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Employee not found" });
     }
 
     // Fetch projects with populated waypoints
     const projects = await Project.find({ employees: user._id }).populate({
       path: "waypoints",
-      populate: { path: "createdBy", select: "empId name role email" }
+      populate: { path: "createdBy", select: "empId name role email" },
     });
 
     // Step 1: Extract ALL complete segments with project info and date
     const allSegments = [];
-    projects.forEach(project => {
-      const employeeWaypoints = project.waypoints.flat().filter(
-        wp => wp.createdBy?.empId === empId
-      );
+    projects.forEach((project) => {
+      const employeeWaypoints = project.waypoints
+        .flat()
+        .filter((wp) => wp.createdBy?.empId === empId);
 
       let currentSegment = [];
-      employeeWaypoints.forEach(waypoint => {
+      employeeWaypoints.forEach((waypoint) => {
         if (waypoint.isStart) currentSegment = [waypoint];
         else if (currentSegment.length > 0) currentSegment.push(waypoint);
         if (waypoint.isEnd && currentSegment.length > 0) {
-          const segmentDate = new Date(waypoint.timestamp).toISOString().split('T')[0]; // Extract YYYY-MM-DD
+          const segmentDate = new Date(waypoint.timestamp)
+            .toISOString()
+            .split("T")[0]; // Extract YYYY-MM-DD
           allSegments.push({
             projectId: project.projectId,
             circle: project.circle,
@@ -364,7 +370,7 @@ exports.getAllWaypointsEmployee = async (req, res) => {
             description: project.description,
             segment: currentSegment,
             date: segmentDate, // Store date for grouping
-            timestamp: waypoint.timestamp // For exact sorting
+            timestamp: waypoint.timestamp, // For exact sorting
           });
           currentSegment = [];
         }
@@ -376,7 +382,7 @@ exports.getAllWaypointsEmployee = async (req, res) => {
 
     // Step 3: Group segments by date (newest first)
     const dateGroups = {};
-    allSegments.forEach(segment => {
+    allSegments.forEach((segment) => {
       if (!dateGroups[segment.date]) {
         dateGroups[segment.date] = [];
       }
@@ -388,20 +394,20 @@ exports.getAllWaypointsEmployee = async (req, res) => {
       (a, b) => new Date(b) - new Date(a)
     );
     const result = [];
-    sortedDates.forEach(date => {
+    sortedDates.forEach((date) => {
       const projectsMap = new Map(); // Group segments by project for this date
-      dateGroups[date].forEach(segment => {
+      dateGroups[date].forEach((segment) => {
         if (!projectsMap.has(segment.projectId)) {
           projectsMap.set(segment.projectId, {
             projectId: segment.projectId,
             circle: segment.circle,
             division: segment.division,
             description: segment.description,
-            waypoints: []
+            waypoints: [],
           });
         }
         projectsMap.get(segment.projectId).waypoints.push(
-          segment.segment.map(wp => ({
+          segment.segment.map((wp) => ({
             _id: wp._id,
             // name: wp.name,
             // description: wp.description,
@@ -411,17 +417,21 @@ exports.getAllWaypointsEmployee = async (req, res) => {
             isStart: wp.isStart,
             isEnd: wp.isEnd,
             image: wp.image,
-            gpsDetails: Array.isArray(wp.gpsDetails) && wp.gpsDetails.length > 0 && wp.gpsDetails[0].feederName 
-  ? { feederName: wp.gpsDetails[0].feederName } 
-  : null,
+            gpsDetails:
+              Array.isArray(wp.gpsDetails) &&
+              wp.gpsDetails.length > 0 &&
+              wp.gpsDetails[0].feederName
+                ? { feederName: wp.gpsDetails[0].feederName }
+                : null,
             timestamp: wp.timestamp,
-            createdBy: wp.createdBy ? { 
-              empId: wp.createdBy.empId, 
-              name: wp.createdBy.name,
-              role: wp.createdBy.role,
-              email: wp.createdBy.email
-            } : null,
-            
+            createdBy: wp.createdBy
+              ? {
+                  empId: wp.createdBy.empId,
+                  name: wp.createdBy.name,
+                  role: wp.createdBy.role,
+                  email: wp.createdBy.email,
+                }
+              : null,
           }))
         );
       });
@@ -433,16 +443,13 @@ exports.getAllWaypointsEmployee = async (req, res) => {
       success: true,
       empId,
       employeeName: user.name,
-      projects: result
+      projects: result,
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to fetch waypoints", 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch waypoints",
+      error: error.message,
     });
   }
 };
-
-
-
