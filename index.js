@@ -5,6 +5,8 @@ const app = express();
 const cors = require("cors");
 const helmet = require("helmet");
 const { swaggerUI, swaggerSpec } = require("./swagger");
+const multer = require("multer");
+const upload = multer();
 
 // Import route modules
 const authRoutes = require("./routes/authRoutes");
@@ -36,6 +38,7 @@ app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
+app.use(upload.any());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 
