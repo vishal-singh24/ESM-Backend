@@ -1,5 +1,7 @@
 const Project = require("../models/Projects");
 const User = require("../models/Users");
+const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
+
 
 //controller function to create a new project(only admin can create a new project)
 exports.createProject = async (req, res) => {
