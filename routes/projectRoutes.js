@@ -191,10 +191,12 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *                 description: Image URL of the waypoint
  *               poleDetails:
  *                 type: string
- *                   description: JSON stringified array of pole details. Example: '[{"poleNo":1,"poleType":"wood"}]'
+ *                 description: JSON stringified array of pole details. 
+ *                 example: '[{"poleNo":1,"poleType":"wood"}]'
  *               gpsDetails:
  *                 type: string
- *                 description: JSON stringified array of GPS details. Example: '[{"transformerKV":"11KV","currentWaypointCoordinates":{"latitude":12.34,"longitude":56.78}}]'
+ *                 description: JSON stringified array of GPS details. 
+ *                 example: '[{"transformerKV":"11KV","currentWaypointCoordinates":{"latitude":12.34,"longitude":56.78}}]'
  *                 
  *     responses:
  *       201:
