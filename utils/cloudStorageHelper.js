@@ -1,5 +1,4 @@
-
-const { Storage } = require('@google-cloud/storage');
+const { Storage } = require("@google-cloud/storage");
 
 const bucketName = process.env.GCLOUD_BUCKET_NAME;
 const projectId = process.env.GCLOUD_PROJECT_ID;
@@ -17,7 +16,7 @@ if (!keyFilename) {
 
 const storage = new Storage({
   projectId,
-  keyFilename
+  keyFilename,
 });
 const bucket = storage.bucket(bucketName);
 
@@ -26,7 +25,9 @@ const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png"];
 const uploadImageToCloudStorage = async (file, folder = "uploads") => {
   if (!file) throw new Error("No file provided");
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    throw new Error("Invalid file type. Only .jpg, .jpeg, and .png are allowed.");
+    throw new Error(
+      "Invalid file type. Only .jpg, .jpeg, and .png are allowed."
+    );
   }
 
   const sanitizedFilename = file.originalname.replace(/\s+/g, "_");
@@ -37,14 +38,9 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
   });
 
   return new Promise((resolve, reject) => {
-    stream.on("finish",async() => {
-      try {
-        await blob.makePublic();
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-        resolve(publicUrl);
-      } catch (err) {
-        reject(new Error("Failed to make image public: " + err.message));
-      }
+    stream.on("finish", async () => {
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+      resolve(publicUrl);
     });
     stream.on("error", reject);
     stream.end(file.buffer);
@@ -53,7 +49,9 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
 
 const deleteImageFromCloudStorage = async (imageUrl) => {
   if (!imageUrl) return;
-  const match = imageUrl.match(/https:\/\/storage\.googleapis\.com\/[^\/]+\/(.+)/);
+  const match = imageUrl.match(
+    /https:\/\/storage\.googleapis\.com\/[^\/]+\/(.+)/
+  );
   if (!match) return;
   const path = match[1];
 

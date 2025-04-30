@@ -114,14 +114,20 @@ exports.getMyProjects = async (req, res) => {
 //controller function to add a waypoint to a project(only employee can add a waypoint to a project)
 exports.addWaypoint = async (req, res) => {
   try {
+    
+
     const { projectId } = req.params;
     const employeeId = req.user._id;
 
     const project = await Project.findOne({ projectId });
-    if (!project) return res.status(404).json({ message: "Project not found" });
+    if (!project) {
+      console.log('Project not found for ID:', projectId);
+      return res.status(404).json({ message: "Project not found" });
+    }
 
     // Check if employee is assigned to the project
     if (!project.employees.includes(employeeId)) {
+      console.log('Employee not assigned to project:', employeeId);
       return res.status(403).json({ message: "Not assigned to this project" });
     }
 
@@ -135,28 +141,44 @@ exports.addWaypoint = async (req, res) => {
       gpsDetails = "[]",
     } = req.body;
 
+   
+    // Parse numerical values
     const parsedLatitude = parseFloat(latitude);
     const parsedLongitude = parseFloat(longitude);
     const parsedIsStart = isStart === "true" || isStart === true;
     const parsedIsEnd = isEnd === "true" || isEnd === true;
-    let parsedPoleDetails = [];
-    let parsedGpsDetails = [];
-    try {
-      parsedPoleDetails = JSON.parse(poleDetails);
-    } catch (e) {
-      return res.status(400).json({ message: "Invalid JSON in poleDetails" });
-    }
 
-    try {
-      parsedGpsDetails = JSON.parse(gpsDetails);
-    } catch (e) {
-      return res.status(400).json({ message: "Invalid JSON in gpsDetails" });
-    }
+    // Helper function to clean and parse JSON strings
+    const parseJsonField = (field, fieldName) => {
+      try {
+        // If field is already an object/array (when sending raw JSON)
+        if (typeof field === 'object') {
+          return field;
+        }
+        
+        // If field is a string (when using form-data)
+        if (typeof field === 'string') {
+          const parsed = JSON.parse(field);
+          if (!Array.isArray(parsed)) {
+            throw new Error(`${fieldName} must be an array`);
+          }
+          return parsed;
+        }
+        
+        throw new Error(`Invalid ${fieldName} format`);
+      } catch (e) {
+        console.error(`Failed to parse ${fieldName}:`, field, e);
+        throw new Error(`Invalid ${fieldName} format`);
+      }
+    };
 
-    if (!Array.isArray(parsedPoleDetails) || !Array.isArray(parsedGpsDetails)) {
-      return res
-        .status(400)
-        .json({ message: "poleDetails and gpsDetails must be arrays" });
+    let parsedPoleDetails, parsedGpsDetails;
+    try {
+      parsedPoleDetails = parseJsonField(poleDetails, 'poleDetails');
+      parsedGpsDetails = parseJsonField(gpsDetails, 'gpsDetails');
+      
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
     }
 
     // Validate required fields
@@ -167,10 +189,25 @@ exports.addWaypoint = async (req, res) => {
       isStart == null ||
       isEnd == null
     ) {
+      console.log('Missing required fields:', {
+        name,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        isStart,
+        isEnd
+      });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const imageUrl = await handleSingleImageUpload(req);
+    // Handle image upload
+    let imageUrl;
+    try {
+      imageUrl = await handleSingleImageUpload(req);
+      console.log('Image uploaded successfully:', imageUrl);
+    } catch (uploadError) {
+      console.error('Image upload failed:', uploadError);
+      return res.status(400).json({ message: "Image upload failed" });
+    }
 
     const waypoint = {
       name,
@@ -186,19 +223,29 @@ exports.addWaypoint = async (req, res) => {
       pathOwner: parsedIsStart ? employeeId : null,
     };
 
+    console.log('New waypoint:', waypoint);
+
+    // Handle waypoint addition to project
     if (project.waypoints.length === 0) {
       waypoint.pathOwner = employeeId;
       project.waypoints.push([waypoint]);
+      console.log('Added first waypoint to new path');
     } else if (waypoint.isStart) {
       waypoint.pathOwner = employeeId;
       project.waypoints.push([waypoint]);
+      console.log('Added new path with starting waypoint');
     } else {
       const lastPath = project.waypoints[project.waypoints.length - 1];
       const lastPathOwner = lastPath[0].pathOwner;
 
       if (lastPathOwner.toString() === employeeId.toString()) {
         lastPath.push(waypoint);
+        console.log('Added waypoint to existing path');
       } else {
+        console.log('Path ownership conflict:', {
+          lastPathOwner,
+          employeeId
+        });
         return res.status(403).json({
           message:
             "You can only add to paths you started. Start a new path with `isStart: true`.",
@@ -207,10 +254,14 @@ exports.addWaypoint = async (req, res) => {
     }
 
     await project.save();
+    console.log('Project saved successfully');
     res.status(201).json({ message: "Waypoint added successfully", waypoint });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Full error stack:", error.stack); // Log full error stack
+    res.status(500).json({ 
+      message: "Server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
