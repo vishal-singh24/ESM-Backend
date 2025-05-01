@@ -10,6 +10,7 @@ const {
   getAllWaypointsEmployee,
 } = require("../controllers/projectController");
 const { authMiddleware } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 const router = express.Router();
 
 /**
@@ -210,7 +211,7 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *       500:
  *         description: Server error
  */
-router.post("/:projectId/waypoints", authMiddleware("employee"), addWaypoint);
+router.post("/:projectId/waypoints", authMiddleware("employee"),upload.single("image"), addWaypoint);
 
 /**
  * @swagger
