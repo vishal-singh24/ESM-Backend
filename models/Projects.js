@@ -67,7 +67,7 @@ const GpsDetailSchema = new mongoose.Schema(
 
     district: { type: String },
     routeStartPoint: { type: String },
-    lengthperKm: { type: Number },
+    lengthInMeter: { type: Number },
 
     startPointCoordinates: {
       latitude: { type: Number },

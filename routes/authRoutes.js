@@ -44,7 +44,7 @@ const router = express.Router();
  *                 
  *               email:
  *                 type: string
- *                 example: Name 
+ *                 example: "user@example.com"
  *                 format: email
  *               empId:
  *                 type: string
@@ -53,7 +53,7 @@ const router = express.Router();
  *               mobileNo:
  *                 type: string
  *                 format: phone
- *                 example: 1234567890
+ *                 example: 9034567890
  *               role:
  *                 type: string
  *                 enum: [admin, employee]
