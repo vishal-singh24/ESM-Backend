@@ -10,18 +10,21 @@ const createErrorResponse = (message, statusCode = 400) => {
     success: false,
     error: {
       code: statusCode,
-      message: message
-    }
+      message: message,
+    },
   };
 };
 
 // Validate environment variables
 const validateEnvironment = () => {
   const errors = [];
-  if (!bucketName) errors.push("GCLOUD_BUCKET_NAME environment variable is not set.");
-  if (!projectId) errors.push("GCLOUD_PROJECT_ID environment variable is not set.");
-  if (!keyFilename) errors.push("GCLOUD_KEY_FILE environment variable is not set.");
-  
+  if (!bucketName)
+    errors.push("GCLOUD_BUCKET_NAME environment variable is not set.");
+  if (!projectId)
+    errors.push("GCLOUD_PROJECT_ID environment variable is not set.");
+  if (!keyFilename)
+    errors.push("GCLOUD_KEY_FILE environment variable is not set.");
+
   if (errors.length > 0) {
     return createErrorResponse(errors.join(" "), 500);
   }
@@ -50,7 +53,10 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
   // Check if storage was initialized properly
   if (envError) return envError;
   if (!storage || !bucket) {
-    return createErrorResponse("Storage service is not properly configured.", 500);
+    return createErrorResponse(
+      "Storage service is not properly configured.",
+      500
+    );
   }
 
   if (!file) return createErrorResponse("No file provided");
@@ -75,12 +81,9 @@ const uploadImageToCloudStorage = async (file, folder = "uploads") => {
       stream.on("error", reject);
       stream.end(file.buffer);
     });
-    
+
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-    return {
-      success: true,
-      url: publicUrl
-    };
+    return publicUrl;
   } catch (error) {
     console.error("Upload error:", error);
     return createErrorResponse("Failed to upload image to cloud storage.", 500);
@@ -91,11 +94,14 @@ const deleteImageFromCloudStorage = async (imageUrl) => {
   // Check if storage was initialized properly
   if (envError) return envError;
   if (!storage || !bucket) {
-    return createErrorResponse("Storage service is not properly configured.", 500);
+    return createErrorResponse(
+      "Storage service is not properly configured.",
+      500
+    );
   }
 
   if (!imageUrl) return createErrorResponse("No image URL provided");
-  
+
   const match = imageUrl.match(
     /https:\/\/storage\.googleapis\.com\/[^\/]+\/(.+)/
   );
