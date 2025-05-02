@@ -133,6 +133,8 @@ exports.addWaypoint = async (req, res) => {
 
     const {
       name,
+      description,
+      distanceFromPrevious ,
       latitude,
       longitude,
       isStart,
@@ -147,6 +149,8 @@ exports.addWaypoint = async (req, res) => {
     const parsedLongitude = parseFloat(longitude);
     const parsedIsStart = isStart === "true" || isStart === true;
     const parsedIsEnd = isEnd === "true" || isEnd === true;
+    const parsedDistance = parseFloat(distanceFromPrevious);
+
 
     // Helper function to clean and parse JSON strings
     const parseJsonField = (field, fieldName) => {
@@ -211,6 +215,8 @@ exports.addWaypoint = async (req, res) => {
 
     const waypoint = {
       name,
+      description,
+      distanceFromPrevious: parsedDistance,
       latitude: parsedLatitude,
       longitude: parsedLongitude,
       isStart: parsedIsStart,
