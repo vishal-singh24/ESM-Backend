@@ -141,7 +141,7 @@ const WaypointSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     description: { type: String },
-    distanceFromPrevious: { type: Number },
+    distanceFromPrevious: { type: Number,default: 0 },
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     isEnd: { type: Boolean, default: false },
