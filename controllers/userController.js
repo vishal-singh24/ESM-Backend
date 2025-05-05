@@ -9,6 +9,11 @@ exports.updateUser = async (req, res) => {
     const { empId } = req.params;
     let updates = sanitize(req.body);
 
+    if (updates.image === 'null') {
+      updates.image = null;
+    }
+
+
     // Hash password if updating
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
@@ -19,12 +24,26 @@ exports.updateUser = async (req, res) => {
       updates.mobileNo = "+91" + updates.mobileNo;
     }
 
+    const existingUser = await User.findOne({ empId });
+    if (!existingUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
     // Handle image upload only if a new image is provided
-    const imageUrl = await handleSingleImageUpload(req);
-    if (imageUrl) {
-      if (existingUser.image) {
-        await deleteImageFromCloudStorage(existingUser.image);
-      }
+    let imageShouldBeRemoved = updates.image === null;
+    const newImageUrl = await handleSingleImageUpload(req);
+    
+
+    if ((imageShouldBeRemoved || newImageUrl) && existingUser.image) {
+      await deleteImageFromCloudStorage(existingUser.image);
+    }
+
+    // Set final image value
+    if (imageShouldBeRemoved) {
+      updates.image = null;
+    } else if (newImageUrl) {
       updates.image = newImageUrl;
     }
 
@@ -33,12 +52,6 @@ exports.updateUser = async (req, res) => {
       { $set: updates },
       { new: true, runValidators: true }
     );
-
-    if (!updatedUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
 
     res.status(200).json({
       success: true,
@@ -53,12 +66,10 @@ exports.updateUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating user:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Internal Server Error",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };

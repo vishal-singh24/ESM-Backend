@@ -24,13 +24,12 @@ const router = express.Router();
  *    requestBody:
  *      required: true
  *      content:
- *        application/json:
+ *        multipart/form-data:
  *          schema:
  *            type: object
  *            properties:
  *              name:
- *                type: string
- *              
+ *                type: string   
  *              password:
  *                type: string
  *              email:
@@ -38,8 +37,7 @@ const router = express.Router();
  *              mobileNo:
  *                type: string
  *                format: phone
- *                example: 1234567890
- *              
+ *                example: 9134567890
  *              image:
  *                type: string
  *                format: binary
