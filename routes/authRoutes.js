@@ -1,4 +1,3 @@
-
 const express = require("express");
 const {
   registerUser,
@@ -6,6 +5,7 @@ const {
   loginEmployee,
   resetPassword,
   getCurrentUser,
+  getAllEmployees,
 } = require("../controllers/authController");
 const {
   authMiddleware,
@@ -21,7 +21,7 @@ const router = express.Router();
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Add new Admin or Employee  
+ *     summary: Add new Admin or Employee
  *     description: Add a new user (Admin or Employee) with an image.
  *     tags: [Admin,]
  *     security:
@@ -40,8 +40,8 @@ const router = express.Router();
  *             properties:
  *               name:
  *                 type: string
- *                 x-hintText: "e.g., user123" 
- *                 
+ *                 x-hintText: "e.g., user123"
+ *
  *               email:
  *                 type: string
  *                 example: "user@example.com"
@@ -94,7 +94,7 @@ router.get("/admins", verifyToken, isAdmin, async (req, res) => {
  *   post:
  *     summary: Employee Login
  *     tags: [Employee]
- *       
+ *
  *     requestBody:
  *       required: true
  *       content:
@@ -118,7 +118,7 @@ router.get("/admins", verifyToken, isAdmin, async (req, res) => {
  *         description: Invalid credentials
  *       500:
  *         description: Internal server error
- *       
+ *
  */
 router.post("/login-employee", loginEmployee);
 
@@ -146,16 +146,15 @@ router.post("/login-employee", loginEmployee);
  *     responses:
  *       200:
  *         description: Login successful
- *       400:  
+ *       400:
  *         description: Email and Password required
  *       401:
  *         description: Invalid credentials
  *       500:
  *         description: Internal server error
- *      
+ *
  */
 router.post("/login-admin", loginAdmin);
-
 
 // router.post("/resetPassword", authMiddleware(["admin"]), resetPassword);
 
@@ -178,5 +177,9 @@ router.post("/login-admin", loginAdmin);
  *         description: Internal server error
  */
 router.get("/me", authMiddleware(["employee", "admin"]), getCurrentUser);
-
+router.get(
+  "/employees",
+  authMiddleware(["admin"]), // Strict admin-only access
+  getAllEmployees // Handler function
+);
 module.exports = router;

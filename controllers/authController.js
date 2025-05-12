@@ -5,7 +5,6 @@ const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
 const rateLimit = require("express-rate-limit");
 const sanitize = require("mongo-sanitize");
 
-
 // Admin-specific security enhancements
 
 //controller function to register a new user(only admin can register a new user)
@@ -26,7 +25,8 @@ exports.registerUser = async (req, res) => {
     if (!["admin", "employee"].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid role specified. Only 'admin' or 'employee' are allowed.",
+        message:
+          "Invalid role specified. Only 'admin' or 'employee' are allowed.",
       });
     }
 
@@ -73,7 +73,9 @@ exports.registerUser = async (req, res) => {
     // Respond with the success message
     res.status(201).json({
       success: true,
-      message: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} registered successfully.`,
+      message: `${
+        newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)
+      } registered successfully.`,
       user: {
         name: newUser.name,
         email: newUser.email,
@@ -88,7 +90,8 @@ exports.registerUser = async (req, res) => {
     // Handle errors gracefully and send response to the client
     res.status(500).json({
       success: false,
-      message: error.message || "Internal server error. Please try again later.",
+      message:
+        error.message || "Internal server error. Please try again later.",
     });
   }
 };
@@ -195,7 +198,7 @@ exports.loginEmployee = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    return res.status(200).json({ message: "Login successful" ,token});
+    return res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -250,3 +253,26 @@ exports.adminLimiter = rateLimit({
     });
   },
 });
+
+//Fetches all employees with role 'employee' from the database
+exports.getAllEmployees = async (req, res) => {
+  try {
+    // Query employees with lean() for better performance since we just need plain objects
+    const employees = await User.find({ role: "employee" })
+      .select("-password -__v")
+      .sort({ name: 1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      employees,
+    });
+  } catch (error) {
+    // Log full error for debugging but send generic message to client
+    console.error("[EmployeeController] Error fetching employees:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch employee list",
+    });
+  }
+};
