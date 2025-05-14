@@ -51,7 +51,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
 
 // Swagger UI - MOVED AFTER API ROUTES
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
 // Global error handler
 app.use((err, req, res, next) => {

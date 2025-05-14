@@ -220,20 +220,20 @@ router.get("/me", authMiddleware(["employee", "admin"]), getCurrentUser);
  *                         example: "+919876543210"
  *                       role:
  *                         type: string
+ *                         enum: [employee, admin]
  *                         example: "employee"
  *                       image:
  *                         type: string
  *                         example: "https://storage.googleapis.com/your-bucket/profile-images/user123.jpg"
  *                         nullable: true
  *       401:
- *         description: Unauthorized - Bearer token missing or invalid
- *       403:
- *         description: Forbidden - Admin access required
+ *         description: Unauthorized – Bearer token missing or invalid
  *       404:
  *         description: No employees found
  *       500:
- *         description: Failed to fetch employee list
+ *         description: Internal server error
  */
+
 router.get(
   "/employees",
   authMiddleware(["admin"]), // Strict admin-only access
