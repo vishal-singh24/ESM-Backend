@@ -177,9 +177,67 @@ router.post("/login-admin", loginAdmin);
  *         description: Internal server error
  */
 router.get("/me", authMiddleware(["employee", "admin"]), getCurrentUser);
+
+/**
+ * @swagger
+ * /api/auth/employees:
+ *   get:
+ *     summary: Get all employees
+ *     description: Retrieves a list of all employees. Admin access only.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of employees retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 employees:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       name:
+ *                         type: string
+ *                         example: "John Doe"
+ *                       empId:
+ *                         type: string
+ *                         example: "EMP001"
+ *                       email:
+ *                         type: string
+ *                         example: "john.doe@example.com"
+ *                       mobileNo:
+ *                         type: string
+ *                         example: "+919876543210"
+ *                       role:
+ *                         type: string
+ *                         example: "employee"
+ *                       image:
+ *                         type: string
+ *                         example: "https://storage.googleapis.com/your-bucket/profile-images/user123.jpg"
+ *                         nullable: true
+ *       401:
+ *         description: Unauthorized - Bearer token missing or invalid
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: No employees found
+ *       500:
+ *         description: Failed to fetch employee list
+ */
 router.get(
   "/employees",
   authMiddleware(["admin"]), // Strict admin-only access
   getAllEmployees // Handler function
 );
+
 module.exports = router;
