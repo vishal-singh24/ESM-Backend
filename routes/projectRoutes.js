@@ -157,6 +157,9 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *               - name
  *               - latitude
  *               - longitude
+ *               - routeType  
+ *               - routeStartingPoint
+ *               - routeEndingPoint
  *               - poleDetails
  *               - gpsDetails
  *               - isStart
@@ -178,6 +181,15 @@ router.get("/all-projects", authMiddleware(["admin"]), allProjects);
  *               longitude:
  *                 type: number
  *                 description: Longitude coordinate of the waypoint
+ *               routeType:
+ *                 type: String
+ *                 description: Route can either be existing or new
+ *               routeStartingPoint:
+ *                 type: String
+ *                 description: Route Starting Point
+ *               routeEndingPoint:
+ *                 type: String
+ *                 description: Route Ending Point
  *               isStart:
  *                 type: boolean
  *                 description: Indicates if this waypoint is the starting point
