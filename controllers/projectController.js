@@ -137,8 +137,11 @@ exports.addWaypoint = async (req, res) => {
       longitude,
       isStart,
       isEnd,
-      poleDetails = "[]",
-      gpsDetails = "[]",
+      poleDetails ,
+      gpsDetails ,
+      routeType,
+      routeStartingPoint,
+      routeEndingPoint
     } = req.body;
 
     // Parse numerical values
@@ -174,8 +177,8 @@ exports.addWaypoint = async (req, res) => {
 
     let parsedPoleDetails, parsedGpsDetails;
     try {
-      parsedPoleDetails = parseJsonField(poleDetails, "poleDetails");
-      parsedGpsDetails = parseJsonField(gpsDetails, "gpsDetails");
+      parsedPoleDetails =poleDetails? parseJsonField(poleDetails, "poleDetails"):[];
+      parsedGpsDetails =gpsDetails? parseJsonField(gpsDetails, "gpsDetails"):[];
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -186,7 +189,7 @@ exports.addWaypoint = async (req, res) => {
       isNaN(parsedLatitude) ||
       isNaN(parsedLongitude) ||
       isStart == null ||
-      isEnd == null
+      isEnd == null||!routeType||!routeStartingPoint||!routeEndingPoint
     ) {
       console.log("Missing required fields:", {
         name,
@@ -223,6 +226,9 @@ exports.addWaypoint = async (req, res) => {
       image: imageUrl,
       poleDetails: parsedPoleDetails,
       gpsDetails: parsedGpsDetails,
+      routeType,
+      routeStartingPoint,
+      routeEndingPoint,
       createdBy: employeeId,
       timestamp: new Date(),
       pathOwner:  employeeId
