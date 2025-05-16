@@ -4,22 +4,39 @@ const { handleSingleImageUpload } = require("../utils/imageUploadHelper");
 const { deleteImageFromCloudStorage } = require("../utils/cloudStorageHelper");
 const sanitize = require("mongo-sanitize");
 
+// Controller to fetch user by empId
+exports.getEmployeeByEmpId = async (req, res) => {
+  try {
+    const { empId } = req.params;
+    const user = await User.findOne({ empId }).select("-password");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+// Controller to update user details
 exports.updateUser = async (req, res) => {
   try {
     const { empId } = req.params;
     let updates = sanitize(req.body);
 
-    if (updates.image === 'null') {
+    if (updates.image === "null") {
       updates.image = null;
     }
 
-
-    // Hash password if updating
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
 
-    // Format mobile number if updating
     if (updates.mobileNo && !updates.mobileNo.startsWith("+91")) {
       updates.mobileNo = "+91" + updates.mobileNo;
     }
@@ -31,16 +48,13 @@ exports.updateUser = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Handle image upload only if a new image is provided
     let imageShouldBeRemoved = updates.image === null;
     const newImageUrl = await handleSingleImageUpload(req);
-    
 
     if ((imageShouldBeRemoved || newImageUrl) && existingUser.image) {
       await deleteImageFromCloudStorage(existingUser.image);
     }
 
-    // Set final image value
     if (imageShouldBeRemoved) {
       updates.image = null;
     } else if (newImageUrl) {
