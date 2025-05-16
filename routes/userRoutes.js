@@ -1,5 +1,8 @@
 const express = require("express");
-const { updateUser } = require("../controllers/userController");
+const {
+  updateUser,
+  getEmployeeByEmpId,
+} = require("../controllers/userController");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 
@@ -29,7 +32,7 @@ const router = express.Router();
  *            type: object
  *            properties:
  *              name:
- *                type: string   
+ *                type: string
  *              password:
  *                type: string
  *              email:
@@ -52,7 +55,7 @@ const router = express.Router();
  *        description: User not found
  *      500:
  *        description: Internal server error
- *     
+ *
  */
 
 router.patch(
@@ -61,5 +64,32 @@ router.patch(
   upload.single("image"),
   updateUser
 );
-
+/**
+ * @swagger
+ * /api/users/:empId:
+ *   get:
+ *     summary: Get a user by empId
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: empId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The employee ID of the user
+ *     responses:
+ *       200:
+ *         description: The user information
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/:empId",
+  authMiddleware(["admin", "employee"]),
+  getEmployeeByEmpId
+);
 module.exports = router;
