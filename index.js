@@ -9,6 +9,7 @@ const { swaggerUI, swaggerSpec } = require("./swagger");
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const userRoutes = require("./routes/userRoutes");
+const kmzRoutes = require("./routes/kmzRoutes");
 
 // Configure port
 const PORT = process.env.PORT || 8080;
@@ -40,6 +41,24 @@ app.options("*", cors(corsOptions));
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+
+
+// API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/downloads", kmzRoutes);
+
+
+app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
+  });
+});
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
