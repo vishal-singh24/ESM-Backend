@@ -452,21 +452,42 @@ exports.getAllWaypointsEmployee = async (req, res) => {
         .filter((wp) => wp.createdBy?.empId === empId);
 
       let currentSegment = [];
-      employeeWaypoints.forEach((waypoint) => {
-        if (waypoint.isStart) currentSegment = [waypoint];
-        else if (currentSegment.length > 0) currentSegment.push(waypoint);
+
+      employeeWaypoints.forEach((waypoint, idx) => {
+        if (waypoint.isStart) {
+          currentSegment = [waypoint];
+        } else if (currentSegment.length > 0) {
+          currentSegment.push(waypoint);
+        }
+
+        const isLast = idx === employeeWaypoints.length - 1;
+
+        // If isEnd, add complete segment
         if (waypoint.isEnd && currentSegment.length > 0) {
-          const segmentDate = new Date(waypoint.timestamp)
-            .toISOString()
-            .split("T")[0]; // Extract YYYY-MM-DD
+          const segmentDate = new Date(waypoint.timestamp).toISOString().split("T")[0];
           allSegments.push({
             projectId: project.projectId,
             circle: project.circle,
             division: project.division,
             description: project.description,
             segment: currentSegment,
-            date: segmentDate, // Store date for grouping
-            timestamp: waypoint.timestamp, // For exact sorting
+            date: segmentDate,
+            timestamp: waypoint.timestamp,
+          });
+          currentSegment = [];
+        }
+
+        // If last item and segment still open (incomplete), add it
+        if (isLast && currentSegment.length > 0) {
+          const segmentDate = new Date(currentSegment[0].timestamp).toISOString().split("T")[0];
+          allSegments.push({
+            projectId: project.projectId,
+            circle: project.circle,
+            division: project.division,
+            description: project.description,
+            segment: currentSegment,
+            date: segmentDate,
+            timestamp: currentSegment[0].timestamp,
           });
           currentSegment = [];
         }
