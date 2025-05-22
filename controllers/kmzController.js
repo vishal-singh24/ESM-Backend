@@ -11,19 +11,19 @@ exports.downloadKmz = async (req, res) => {
         }
 
         // Debug: Log incoming parameters
-        console.log(`Request received for projectId: ${projectId}, empId: ${empId}`);
+       // console.log(`Request received for projectId: ${projectId}, empId: ${empId}`);
 
         // Find the user first to get their _id
         const user = await User.findOne({ empId: empId });
         if (!user) {
-            console.log(`User not found with empId: ${empId}`);
+            //console.log(`User not found with empId: ${empId}`);
             return res.status(404).json({ message: "Employee not found" });
         }
-        console.log(`Found user: ${user._id} (${user.empId})`);
+       // console.log(`Found user: ${user._id} (${user.empId})`);
 
         const project = await Project.findOne({ projectId }).populate('employees');
         if (!project) {
-            console.log(`Project not found with projectId: ${projectId}`);
+            //console.log(`Project not found with projectId: ${projectId}`);
             return res.status(404).json({ message: "Project not found" });
         }
 
@@ -39,12 +39,12 @@ exports.downloadKmz = async (req, res) => {
         );
 
         if (!employeeInProject) {
-            console.log(`Employee ${empId} not found in project ${projectId}`);
+            //console.log(`Employee ${empId} not found in project ${projectId}`);
             return res.status(403).json({ message: "Employee is not part of this project" });
         }
 
         // Debug: Log all waypoints structure
-        console.log('All waypoints in project:', JSON.stringify(project.waypoints, null, 2));
+       // console.log('All waypoints in project:', JSON.stringify(project.waypoints, null, 2));
 
         // Filter waypoints using user's _id
         const allWaypoints = project.waypoints
@@ -54,8 +54,8 @@ exports.downloadKmz = async (req, res) => {
                 return wp.createdBy.toString() === user._id.toString();
             });
 
-        console.log('Filtered waypoints count:', allWaypoints.length);
-        console.log('Filtered waypoints:', allWaypoints);
+        //console.log('Filtered waypoints count:', allWaypoints.length);
+        //console.log('Filtered waypoints:', allWaypoints);
 
         if (allWaypoints.length === 0) {
             console.log('No waypoints found after filtering', {
@@ -76,7 +76,7 @@ exports.downloadKmz = async (req, res) => {
         }
 
         const kmzBuffer = await generateKmzBuffer(allWaypoints);
-        res.setHeader("Content-Disposition", `attachment; filename=${projectId}_${empId}.kmz`);
+        res.setHeader("Content-Disposition", `attachment; filename=${projectId}_feeder.kmz`);
         res.setHeader("Content-Type", "application/vnd.google-earth.kmz");
         res.send(kmzBuffer);
     } catch (err) {
