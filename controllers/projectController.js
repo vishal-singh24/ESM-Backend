@@ -137,11 +137,11 @@ exports.addWaypoint = async (req, res) => {
       longitude,
       isStart,
       isEnd,
-      poleDetails ,
-      gpsDetails ,
+      poleDetails,
+      gpsDetails,
       routeType,
       routeStartingPoint,
-      routeEndingPoint
+      routeEndingPoint,
     } = req.body;
 
     // Parse numerical values
@@ -177,8 +177,12 @@ exports.addWaypoint = async (req, res) => {
 
     let parsedPoleDetails, parsedGpsDetails;
     try {
-      parsedPoleDetails =poleDetails? parseJsonField(poleDetails, "poleDetails"):[];
-      parsedGpsDetails =gpsDetails? parseJsonField(gpsDetails, "gpsDetails"):[];
+      parsedPoleDetails = poleDetails
+        ? parseJsonField(poleDetails, "poleDetails")
+        : [];
+      parsedGpsDetails = gpsDetails
+        ? parseJsonField(gpsDetails, "gpsDetails")
+        : [];
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -189,7 +193,10 @@ exports.addWaypoint = async (req, res) => {
       isNaN(parsedLatitude) ||
       isNaN(parsedLongitude) ||
       isStart == null ||
-      isEnd == null||!routeType||!routeStartingPoint||!routeEndingPoint
+      isEnd == null ||
+      !routeType ||
+      !routeStartingPoint ||
+      !routeEndingPoint
     ) {
       console.log("Missing required fields:", {
         name,
@@ -231,20 +238,20 @@ exports.addWaypoint = async (req, res) => {
       routeEndingPoint,
       createdBy: employeeId,
       timestamp: new Date(),
-      pathOwner:  employeeId
+      pathOwner: employeeId,
     };
 
     console.log("New waypoint:", waypoint);
 
     // Handle waypoint addition to project
     const userPaths = project.waypoints.filter(
-      path => path[0].pathOwner?.toString() === employeeId.toString()
+      (path) => path[0].pathOwner?.toString() === employeeId.toString()
     );
-    
+
     const lastUserPath = userPaths[userPaths.length - 1];
     const hasIncompletePath =
       lastUserPath && !lastUserPath[lastUserPath.length - 1].isEnd;
-    
+
     if (parsedIsStart) {
       // Prevent user from starting a new path if previous path isn't completed
       if (hasIncompletePath) {
@@ -252,7 +259,7 @@ exports.addWaypoint = async (req, res) => {
           message: "Cannot start a new path. Your last path is not complete.",
         });
       }
-    
+
       // Valid start of a new path
       waypoint.pathOwner = employeeId;
       project.waypoints.push([waypoint]);
@@ -264,7 +271,7 @@ exports.addWaypoint = async (req, res) => {
           message: "Cannot end a path that hasn't started.",
         });
       }
-    
+
       lastUserPath.push(waypoint);
       console.log("Ended the current user path");
     } else {
@@ -275,11 +282,10 @@ exports.addWaypoint = async (req, res) => {
             "No active path found. Start a new path with isStart: true before adding midpoints.",
         });
       }
-    
+
       lastUserPath.push(waypoint);
       console.log("Added to existing user path");
     }
-    
 
     await project.save();
     console.log("Project saved successfully");
@@ -464,7 +470,9 @@ exports.getAllWaypointsEmployee = async (req, res) => {
 
         // If isEnd, add complete segment
         if (waypoint.isEnd && currentSegment.length > 0) {
-          const segmentDate = new Date(waypoint.timestamp).toISOString().split("T")[0];
+          const segmentDate = new Date(waypoint.timestamp)
+            .toISOString()
+            .split("T")[0];
           allSegments.push({
             projectId: project.projectId,
             circle: project.circle,
@@ -479,7 +487,9 @@ exports.getAllWaypointsEmployee = async (req, res) => {
 
         // If last item and segment still open (incomplete), add it
         if (isLast && currentSegment.length > 0) {
-          const segmentDate = new Date(currentSegment[0].timestamp).toISOString().split("T")[0];
+          const segmentDate = new Date(currentSegment[0].timestamp)
+            .toISOString()
+            .split("T")[0];
           allSegments.push({
             projectId: project.projectId,
             circle: project.circle,
@@ -534,12 +544,8 @@ exports.getAllWaypointsEmployee = async (req, res) => {
             isStart: wp.isStart,
             isEnd: wp.isEnd,
             image: wp.image,
-            gpsDetails:
-              Array.isArray(wp.gpsDetails) &&
-              wp.gpsDetails.length > 0 &&
-              wp.gpsDetails[0].feederName
-                ? { feederName: wp.gpsDetails[0].feederName }
-                : null,
+            gpsDetails: wp.gpsDetails?.length ? wp.gpsDetails : [],
+            poleDetails: wp.poleDetails?.length ? wp.poleDetails : [],
             timestamp: wp.timestamp,
             createdBy: wp.createdBy
               ? {
