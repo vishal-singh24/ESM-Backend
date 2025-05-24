@@ -15,10 +15,15 @@ const PORT = process.env.PORT || 8080;
 
 // Connect to database
 connectDB();
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://ems-frontend-369113394426.asia-south2.run.app",
+  "https://ems-backend-369113394426.asia-south2.run.app",
+];
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL,
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
