@@ -11,8 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:8080", // Local server URL
-        //url: "https://ems-backend-369113394426.asia-south2.run.app",
+        url: "https://ems-backend-369113394426.asia-south2.run.app",
       },
     ],
     components: {
