@@ -83,7 +83,7 @@ exports.downloadExcel = async (req, res) => {
     // Send Excel file
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${sanitizedFeederName} city feeder details by ${empId}.xlsx`
+      `attachment; filename=${sanitizedFeederName}_city_feeder_details_by_${empId}.xlsx`
     );
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader('Content-Length', excelBuffer.length);
