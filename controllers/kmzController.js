@@ -96,7 +96,7 @@ exports.downloadKmz = async (req, res) => {
     // Send KMZ file with feederName only
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${sanitizedFeederName} city feeder by ${empId} .kmz`
+      `attachment; filename=${sanitizedFeederName}_city_feeder_by_${empId}.kmz`
     );
     res.setHeader("Content-Type", "application/vnd.google-earth.kmz");
     res.setHeader('Content-Length', kmzBuffer.length);
