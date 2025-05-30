@@ -1,8 +1,8 @@
 const Project = require("../models/Projects");
 const User = require("../models/Users");
-const generateKmzBuffer = require("../utils/generateKmzBuffer");
+const generateExcelBuffer = require("../utils/generateExcelBuffer");
 
-exports.downloadKmz = async (req, res) => {
+exports.downloadExcel = async (req, res) => {
   try {
     const { projectId, empId } = req.params;
 
@@ -60,7 +60,8 @@ exports.downloadKmz = async (req, res) => {
         transformerType: waypoint.transformerType,
         poleDetails: waypoint.poleDetails,
         gpsDetails: waypoint.gpsDetails[0], // Get first gpsDetails item
-        routeType: waypoint.routeType 
+        routeType: waypoint.routeType,
+        timestamp: waypoint.timestamp ,
       }));
 
     if (userWaypoints.length === 0) {
@@ -71,36 +72,22 @@ exports.downloadKmz = async (req, res) => {
     }
 
     // Get feederName from gpsDetails
-    const feederName = userWaypoints[0]?.gpsDetails?.feederName;
-    if (!feederName) {
-      // Debug information
-      return res.status(400).json({
-        message: "Feeder name not found in GPS details",
-        success: false,
-        debug: process.env.NODE_ENV === "development" ? {
-          gpsDetailsStructure: userWaypoints[0]?.gpsDetails,
-          availableFields: userWaypoints[0]?.gpsDetails ? Object.keys(userWaypoints[0].gpsDetails) : null
-        } : null
-      });
-    }
+    const excelBuffer = await generateExcelBuffer(userWaypoints);
 
     // Sanitize filename
+    const feederName = userWaypoints[0]?.gpsDetails?.feederName || 'feeder';
     const sanitizedFeederName = feederName
       .replace(/[^a-zA-Z0-9-_]/g, '_')
       .substring(0, 50);
 
-    // Generate KMZ
-    const routeType = String(userWaypoints[0]?.routeType).toLowerCase() || 'new';
-    const kmzBuffer = await generateKmzBuffer(userWaypoints, routeType);
-
-    // Send KMZ file with feederName only
+    // Send Excel file
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${sanitizedFeederName} city feeder by ${empId} .kmz`
+      `attachment; filename=${sanitizedFeederName} city feeder details by ${empId}.xlsx`
     );
-    res.setHeader("Content-Type", "application/vnd.google-earth.kmz");
-    res.setHeader('Content-Length', kmzBuffer.length);
-    res.send(kmzBuffer);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader('Content-Length', excelBuffer.length);
+    res.send(excelBuffer);
 
   } catch (err) {
     res.status(500).json({
