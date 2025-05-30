@@ -327,7 +327,6 @@ async function generateKmzBuffer(waypoints, routeType = "existing") {
 
     return zip.toBuffer();
   } catch (error) {
-    console.error("KMZ generation failed:", error);
     throw error;
   }
 }

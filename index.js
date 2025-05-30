@@ -9,7 +9,7 @@ const { swaggerUI, swaggerSpec } = require("./swagger");
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const userRoutes = require("./routes/userRoutes");
-const kmzRoutes = require("./routes/kmzRoutes");
+const downloadRoutes = require("./routes/downloadRoutes");
 
 // Configure port
 const PORT = process.env.PORT || 8080;
@@ -48,7 +48,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/downloads", kmzRoutes);
+app.use("/api/downloads", downloadRoutes);
 
 
 app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
