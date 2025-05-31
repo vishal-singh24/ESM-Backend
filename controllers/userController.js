@@ -36,9 +36,12 @@ exports.updateUser = async (req, res) => {
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
-
-    if (updates.mobileNo && !updates.mobileNo.startsWith("+91")) {
-      updates.mobileNo = "+91" + updates.mobileNo;
+    
+    if (updates.mobileNo && !/^[0-9]{10}$/.test(updates.mobileNo)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid mobile number format",
+      });
     }
 
     const existingUser = await User.findOne({ empId });
