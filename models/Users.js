@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
     default: null,
     validate: {
       validator: function (v) {
-        return v === null ||/^(\+91)?[0-9]{10}$/.test(v); 
+        return v === null ||/[0-9]{10}$/.test(v); 
       },
       message: (props) => `${props.value} is not a valid Indian mobile number!`,
     },
@@ -18,13 +18,6 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   image: { type: String, default: null },
   role: { type: String, enum: ["admin", "employee"], required: true },
-});
-
-UserSchema.pre("save", function (next) {
-  if (this.mobileNo && !this.mobileNo.startsWith("+91")) {
-    this.mobileNo = "+91" + this.mobileNo;
-  }
-  next();
 });
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
