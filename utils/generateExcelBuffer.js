@@ -16,26 +16,35 @@ async function generateExcelBuffer(waypoints) {
   return buffer;
 }
 
+function calculateDistanceInKm(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371; // Radius of Earth in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 function setupInventorySheet(sheet, waypoints) {
-  // Set up columns with exact widths from template
   sheet.columns = [
-    { header: "", key: "col1", width: 5 }, // A
-    { header: "", key: "col2", width: 25 }, // B
-    { header: "", key: "col3", width: 15 }, // C
-    { header: "", key: "col4", width: 15 }, // D
-    { header: "", key: "col5", width: 10 }, // E
-    { header: "", key: "col6", width: 5 }, // F
-    { header: "", key: "col7", width: 5 }, // G
-    { header: "", key: "col8", width: 5 }, // H
-    { header: "", key: "col9", width: 5 }, // I
-    { header: "", key: "col10", width: 10 }, // J
+    { header: "", key: "col1", width: 5 },
+    { header: "", key: "col2", width: 30 },
+    { header: "", key: "col3", width: 20 },
+    { header: "", key: "col4", width: 20 },
+    { header: "", key: "col5", width: 20 },
+    { header: "", key: "col6", width: 20 },
+    { header: "", key: "col7", width: 20 },
+    { header: "", key: "col8", width: 20 },
+    { header: "", key: "col9", width: 15 },
+    { header: "", key: "col10", width: 15 },
   ];
 
-  // Default styling
   const defaultFont = { name: "Arial", size: 10 };
   const boldFont = { ...defaultFont, bold: true };
 
-  // Helper function to add formatted rows
   const addFormattedRow = (values, isBold = false) => {
     const row = sheet.addRow(values);
     row.height = 15;
@@ -47,19 +56,8 @@ function setupInventorySheet(sheet, waypoints) {
   };
 
   // Add route length information
-  sheet.addRow([]);
-
-  // The controller already ensures gpsDetails is the first item or undefined
-  const totalLength =
-    waypoints.reduce(
-      (sum, wp) => sum + (wp.gpsDetails?.lengthInMeter || 0),
-      0
-    ) / 1000; // Convert meters to KM
-  const existingLength =
-    waypoints
-      .filter((wp) => wp.routeType === "existing")
-      .reduce((sum, wp) => sum + (wp.gpsDetails?.lengthInMeter || 0), 0) /
-    1000; // Convert meters to KM
+  //sheet.addRow([]);
+  const totalLengthRowInMaterialSheet = waypoints.length + 3;
 
   addFormattedRow(
     [
@@ -67,7 +65,7 @@ function setupInventorySheet(sheet, waypoints) {
       "Total Route Length",
       "",
       "",
-      totalLength.toFixed(3),
+      { formula: `'Details of Material'!G${totalLengthRowInMaterialSheet}` },
       "",
       "",
       "",
@@ -76,38 +74,38 @@ function setupInventorySheet(sheet, waypoints) {
     ],
     true
   );
-  addFormattedRow(
-    [
-      "",
-      "Existing Length",
-      "",
-      "",
-      existingLength.toFixed(3),
-      "",
-      "",
-      "",
-      "",
-      "KM.",
-    ],
-    true
-  );
+  // addFormattedRow(
+  //   [
+  //     "",
+  //     "Existing Length",
+  //     "",
+  //     "",
+  //     existingLength.toFixed(3),
+  //     "",
+  //     "",
+  //     "",
+  //     "",
+  //     "KM.",
+  //   ],
+  //   true
+  // );
 
-  const newPropRow = addFormattedRow(
-    [
-      "",
-      "New Proposed Length",
-      "",
-      "",
-      { formula: "E2-E3" },
-      "",
-      "",
-      "",
-      "",
-      "KM.",
-    ],
-    true
-  );
-  newPropRow.getCell("E").numFmt = "0.000";
+  // const newPropRow = addFormattedRow(
+  //   [
+  //     "",
+  //     "New Proposed Length",
+  //     "",
+  //     "",
+  //     { formula: "E2-E3" },
+  //     "",
+  //     "",
+  //     "",
+  //     "",
+  //     "KM.",
+  //   ],
+  //   true
+  // );
+  // newPropRow.getCell("E").numFmt = "0.000";
 
   sheet.addRow([]);
 
@@ -127,6 +125,7 @@ function setupInventorySheet(sheet, waypoints) {
     ],
     true
   );
+  poleHeader.height = 30;
   poleHeader.eachCell((cell, colNumber) => {
     if (colNumber > 2)
       cell.alignment = { ...cell.alignment, horizontal: "center" };
@@ -137,7 +136,7 @@ function setupInventorySheet(sheet, waypoints) {
   // Pole types with counts
   const poleTypes = {
     "Line Pole": "PCC Pole/ PSC Pole",
-    "Angle Pole /Shackle Pole": "RSJ Pole", // Corrected typo: Schackle -> Shackle
+    "Angle Pole /Schackle Pole": "RSJ Pole", // Corrected typo: Schackle -> Shackle
     "Tapping Pole": "Rail Pole",
     "Double Pole Structure": "H-Beam Pole",
   };
@@ -192,202 +191,232 @@ function setupInventorySheet(sheet, waypoints) {
       name: "3 Phase L.T. Distribution box",
       unit: "Nos.",
       key: "ltDistributionBox3Phase",
-      formulaColumn: "P",
+      formulaColumn: "P+BO",
     }, // Maps to P column in Details of Material
-    { name: "AB Switch", unit: "Set", key: "abSwitch", formulaColumn: "Q" },
-    { name: "Anchor Rod", unit: "Nos.", key: "anchorRod", formulaColumn: "R" },
+    { name: "AB Switch", unit: "Set", key: "abSwitch", formulaColumn: "Q+BP" },
+    {
+      name: "Anchor Rod",
+      unit: "Nos.",
+      key: "anchorRod",
+      formulaColumn: "R+BQ",
+    },
     {
       name: "Anchoring Assembly",
       unit: "Set",
       key: "anchoringAssembly",
-      formulaColumn: "S",
+      formulaColumn: "S+BR",
     },
     {
       name: "Angle 4 Feet",
       unit: "Nos.",
       key: "angle4Feet",
-      formulaColumn: "T",
+      formulaColumn: "T+BS",
     },
     {
       name: "Angle 9 Feet",
       unit: "Nos.",
       key: "angle9Feet",
-      formulaColumn: "U",
+      formulaColumn: "U+BT",
     },
-    { name: "Base Plat", unit: "Nos.", key: "basePlat", formulaColumn: "V" },
+    { name: "Base Plat", unit: "Nos.", key: "basePlat", formulaColumn: "V+BU" },
     {
       name: "Channel 4 Feet",
       unit: "Nos.",
       key: "channel4Feet",
-      formulaColumn: "W",
+      formulaColumn: "W+BV",
     },
     {
       name: "Channel 9 Feet",
       unit: "Nos.",
       key: "channel9Feet",
-      formulaColumn: "X",
+      formulaColumn: "X+BW",
     },
-    { name: "DO Channel", unit: "Nos.", key: "doChannel", formulaColumn: "Y" },
+    {
+      name: "DO Channel",
+      unit: "Nos.",
+      key: "doChannel",
+      formulaColumn: "Y+BX",
+    },
     {
       name: "DO Channel Back Clamp",
       unit: "Nos.",
       key: "doChannelBackClamp",
-      formulaColumn: "Z",
+      formulaColumn: "Z+BY",
     },
-    { name: "DO Fuse", unit: "Nos.", key: "doFuse", formulaColumn: "AA" },
+    { name: "DO Fuse", unit: "Set", key: "doFuse", formulaColumn: "AA+BZ" },
     {
       name: "Disc Hardware",
       unit: "Nos.",
       key: "discHardware",
-      formulaColumn: "AB",
+      formulaColumn: "AB+CA",
     },
     {
       name: "Disc Insulator Polymeric",
       unit: "Nos.",
       key: "discInsulatorPolymeric",
-      formulaColumn: "AC",
+      formulaColumn: "AC+CB",
     },
     {
       name: "Disc Insulator Porcelain",
       unit: "Nos.",
       key: "discInsulatorPorcelain",
-      formulaColumn: "AD",
+      formulaColumn: "AD+CC",
     },
     {
       name: "DTR Base Channel",
       unit: "Nos.",
       key: "dtrBaseChannel",
-      formulaColumn: "AE",
+      formulaColumn: "AE+CD",
     },
     {
       name: "DTR Spotting Angle",
       unit: "Nos.",
       key: "dtrSpottingAngle",
-      formulaColumn: "AF",
+      formulaColumn: "AF+CE",
     },
     {
       name: "DTR Spotting Angle with Clamp",
       unit: "Nos.",
       key: "dtrSpottingAngleWithClamp",
-      formulaColumn: "AG",
+      formulaColumn: "AG+CF",
     },
     {
       name: "DVC Conductor",
-      unit: "Mtr.",
+      unit: "Nos.",
       key: "dvcConductor",
-      formulaColumn: "AH",
+      formulaColumn: "AH+CG",
     },
     {
       name: "Earthing Conductor",
-      unit: "Mtr.",
+      unit: "Nos.",
       key: "earthingConductor",
-      formulaColumn: "AI",
+      formulaColumn: "AI+CH",
     },
-    { name: "Elbow", unit: "Nos.", key: "elbow", formulaColumn: "AJ" },
-    { name: "Eye Bolt", unit: "Nos.", key: "eyeBolt", formulaColumn: "AK" },
-    { name: "GI Pin", unit: "Nos.", key: "giPin", formulaColumn: "AL" },
-    { name: "GI Pipe", unit: "Nos.", key: "giPipe", formulaColumn: "AM" },
-    { name: "Greeper", unit: "Nos.", key: "greeper", formulaColumn: "AN" },
+    { name: "Elbow", unit: "Nos.", key: "elbow", formulaColumn: "AJ+CI" },
+    { name: "Eye Bolt", unit: "Nos.", key: "eyeBolt", formulaColumn: "AK+CJ" },
+    { name: "GI Pin", unit: "Nos.", key: "giPin", formulaColumn: "AL+CK" },
+    { name: "GI Pipe", unit: "Nos.", key: "giPipe", formulaColumn: "AM+CL" },
+    { name: "Greeper", unit: "Nos.", key: "greeper", formulaColumn: "AN+CM" },
     {
       name: "Guy Insulator",
       unit: "Nos.",
       key: "guyInsulator",
-      formulaColumn: "AO",
+      formulaColumn: "AO+CN",
     },
     {
       name: "I Huck Clamp",
       unit: "Nos.",
       key: "iHuckClamp",
-      formulaColumn: "AP",
+      formulaColumn: "AP+CO",
     },
     {
       name: "Lighting Arrestor",
       unit: "Nos.",
       key: "lightingArrestor",
-      formulaColumn: "AQ",
+      formulaColumn: "AQ+CP",
     },
     {
       name: "Pin Insulator Polymeric",
-      unit: "Nos.",
+      unit: "Set",
       key: "pinInsulatorPolymeric",
-      formulaColumn: "AR",
+      formulaColumn: "AR+CQ",
     },
     {
       name: "Pin Insulator Porcelain",
       unit: "Nos.",
       key: "pinInsulatorPorcelain",
-      formulaColumn: "AS",
+      formulaColumn: "AS+CR",
     },
     {
       name: "Pole Earthing",
       unit: "Nos.",
       key: "poleEarthing",
-      formulaColumn: "AT",
+      formulaColumn: "AT+CS",
     },
-    { name: "Side Clamp", unit: "Nos.", key: "sideClamp", formulaColumn: "AU" },
+    {
+      name: "Side Clamp",
+      unit: "Nos.",
+      key: "sideClamp",
+      formulaColumn: "AU+CT",
+    },
     {
       name: "Spotting Angle",
       unit: "Nos.",
       key: "spottingAngle",
-      formulaColumn: "AV",
+      formulaColumn: "AV+CU",
     },
     {
       name: "Spotting Channel",
       unit: "Nos.",
       key: "spottingChannel",
-      formulaColumn: "AW",
+      formulaColumn: "AW+CV",
     },
-    { name: "Stay Clamp", unit: "Nos.", key: "stayClamp", formulaColumn: "AX" },
+    {
+      name: "Stay Clamp",
+      unit: "Nos.",
+      key: "stayClamp",
+      formulaColumn: "AX+CW",
+    },
     {
       name: "Stay Insulator",
       unit: "Nos.",
       key: "stayInsulator",
-      formulaColumn: "AY",
+      formulaColumn: "AY+CX",
     },
-    { name: "Stay Rod", unit: "Nos.", key: "stayRoad", formulaColumn: "AZ" },
+    { name: "Stay Rod", unit: "Nos.", key: "stayRoad", formulaColumn: "AZ+CY" },
     {
       name: "Stay Wire 7/12",
-      unit: "Mtr.",
+      unit: "Kg.",
       key: "stayWire712",
-      formulaColumn: "BA",
+      formulaColumn: "BA+CZ",
     },
     {
       name: "Suspension Assembly Clamp",
       unit: "Nos.",
       key: "suspensionAssemblyClamp",
-      formulaColumn: "BB",
+      formulaColumn: "BB+DA",
     },
     {
       name: "Top Channel",
       unit: "Nos.",
       key: "topChannel",
-      formulaColumn: "BC",
+      formulaColumn: "BC+DB",
     },
-    { name: "Top Clamp", unit: "Nos.", key: "topClamp", formulaColumn: "BD" },
+    {
+      name: "Top Clamp",
+      unit: "Nos.",
+      key: "topClamp",
+      formulaColumn: "BD+DC",
+    },
     {
       name: "Turn Buckle",
       unit: "Nos.",
       key: "turnBuckle",
-      formulaColumn: "BE",
+      formulaColumn: "BE+DD",
     },
     {
       name: "V Cross Arm",
       unit: "Nos.",
       key: "vCrossArm",
-      formulaColumn: "BF",
+      formulaColumn: "BF+DE",
     },
     {
       name: "V Cross Arm Clamp",
       unit: "Nos.",
       key: "vCrossArmClamp",
-      formulaColumn: "BG",
+      formulaColumn: "BG+DF",
     },
-    { name: "X Bressing", unit: "Nos.", key: "xBressing", formulaColumn: "BH" },
+    {
+      name: "X Bressing",
+      unit: "Nos.",
+      key: "xBressing",
+      formulaColumn: "BH+DG",
+    },
     {
       name: "Earthing Coil",
       unit: "Nos.",
       key: "earthingCoil",
-      formulaColumn: "BI",
+      formulaColumn: "BI+DH",
     },
   ];
 
@@ -405,11 +434,28 @@ function setupInventorySheet(sheet, waypoints) {
     ]);
     // The formula will now correctly reference the 'Details of Material' sheet
     // The row number for the SUM total in 'Details of Material' is waypoints.length + 2
-    row.getCell("J").value = {
-      formula: `'Details of Material'!${material.formulaColumn}${
-        waypoints.length + 2
-      }`, // +2 accounts for the initial blank row and the header row
-    };
+    const totalRowInMaterialSheet = waypoints.length + 2;
+    let formula = "";
+    if (material.formulaColumn.includes("+")) {
+      // If it's a sum of two columns (e.g., "P+BO")
+      const [col1, col2] = material.formulaColumn.split("+");
+      formula = `SUM('Details of Material'!${col1}3:${col1}${
+        totalRowInMaterialSheet - 1
+      }) + SUM('Details of Material'!${col2}3:${col2}${
+        totalRowInMaterialSheet - 1
+      })`;
+      // Note: I changed the end row for SUM from 'totalRowInMaterialSheet' to 'totalRowInMaterialSheet - 1'
+      // because you want to sum the data rows, not the total row itself.
+      // The total row is at waypoints.length + 2, so the last data row is waypoints.length + 1.
+      // Also, the data starts from row 3 (after a blank row and a header row).
+    } else {
+      // If it's just a single column (e.g., "AG")
+      formula = `SUM('Details of Material'!${material.formulaColumn}3:${
+        material.formulaColumn
+      }${totalRowInMaterialSheet - 1})`;
+    }
+
+    row.getCell("J").value = { formula };
     row.getCell("J").alignment = { horizontal: "right" };
   });
 }
@@ -525,7 +571,11 @@ function setupMaterialSheet(sheet, waypoints) {
     { header: "Channel(4 Feet)", key: "polechannel4Feet", width: 10 },
     { header: "Channel(9 Feet)", key: "polechannel9Feet", width: 10 },
     { header: "D.O. Channel", key: "poledoChannel", width: 10 },
-    { header: "D.O. Channel Back Clamp", key: "poledoChannelBackClamp", width: 10 },
+    {
+      header: "D.O. Channel Back Clamp",
+      key: "poledoChannelBackClamp",
+      width: 10,
+    },
     { header: "D.O. Fuse", key: "poledoFuse", width: 10 },
     { header: "Disc Hardware", key: "polediscHardware", width: 10 },
     {
@@ -587,11 +637,16 @@ function setupMaterialSheet(sheet, waypoints) {
     { header: "Earthing Coil", key: "poleearthingCoil", width: 10 },
   ];
 
-  sheet.columns = columns; // Set sheet columns
+  const columnsWithoutHeaders = columns.map((col) => ({
+    key: col.key,
+    width: col.width,
+  }));
 
-  // Add header row
-  sheet.addRow(); // Adds an empty row for spacing before the header
+  sheet.columns = columnsWithoutHeaders;
+
+  sheet.addRow();
   const headerRow = sheet.addRow(columns.map((col) => col.header));
+  //sheet.columns = columns;
   headerRow.height = 60;
   headerRow.eachCell((cell, colNumber) => {
     cell.border = {
@@ -606,63 +661,38 @@ function setupMaterialSheet(sheet, waypoints) {
       wrapText: true,
     };
 
-    // Define keys that should have regular font (not bold) in the header
-    const materialKeysForRegularFont = [
-      "ltDistributionBox3Phase",
-      "abSwitch",
-      "anchorRod",
-      "anchoringAssembly",
-      "angle4Feet",
-      "angle9Feet",
-      "basePlat",
-      "channel4Feet",
-      "channel9Feet",
-      "doChannel",
-      "doChannelBackClamp",
-      "doFuse",
-      "discHardware",
-      "discInsulatorPolymeric",
-      "discInsulatorPorcelain",
-      "dtrBaseChannel",
-      "dtrSpottingAngle",
-      "dtrSpottingAngleWithClamp",
-      "dvcConductor",
-      "earthingConductor",
-      "elbow",
-      "eyeBolt",
-      "giPin",
-      "giPipe",
-      "greeper",
-      "guyInsulator",
-      "iHuckClamp",
-      "lightingArrestor",
-      "pinInsulatorPolymeric",
-      "pinInsulatorPorcelain",
-      "poleEarthing",
-      "sideClamp",
-      "spottingAngle",
-      "spottingChannel",
-      "stayClamp",
-      "stayInsulator",
-      "stayRoad",
-      "stayWire712",
-      "suspensionAssemblyClamp",
-      "topChannel",
-      "topClamp",
-      "turnBuckle",
-      "vCrossArm",
-      "vCrossArmClamp",
-      "xBressing",
-      "earthingCoil",
+    // Default to regular font for all cells
+    cell.font = { name: "Arial", size: 9, bold: false };
+
+    // Define keys that should have bold font and background color
+    const specialHeaderKeys = [
+      "srNo",
+      "timestamp",
+      "userId",
+      "district",
+      "routeStartPoint",
+      "routeEndPoint",
+      "lengthInKm",
+      "startCoords",
+      "endCoords",
+      "substationName",
+      "feederName",
+      "conductor",
+      "cable",
+      "transformerLocation",
+      "transformerKV",
+      "poleNo",
+      "proposalType",
+      "poleDescription",
+      "poleType",
+      "poleSizeInMeter",
     ];
 
     // Get the key of the current column
     const currentColumnKey = columns[colNumber - 1]?.key;
 
-    if (materialKeysForRegularFont.includes(currentColumnKey)) {
-      cell.font = { name: "Arial", size: 9, bold: false };
-    } else {
-      // Apply default styles to all other cells
+    if (specialHeaderKeys.includes(currentColumnKey)) {
+      // Apply special styling only to these columns
       cell.font = { name: "Arial", size: 9, bold: true };
       cell.fill = {
         type: "pattern",
@@ -672,27 +702,39 @@ function setupMaterialSheet(sheet, waypoints) {
     }
   });
 
-  // Add data rows
   waypoints.forEach((wp, index) => {
-    // These are already the first item or undefined from the controller
-    // If the controller ensures poleDetails and gpsDetails are single objects,
-    // then no need for ?.[0] here. Using || {} for safety if they are null/undefined.
     const poleDetails = wp.poleDetails || {};
     const gpsDetails = wp.gpsDetails || {};
+    const nextGps = waypoints[index + 1]?.gpsDetails || {};
+    const startLat = gpsDetails.currentWaypointCoordinates?.latitude;
+    const startLon = gpsDetails.currentWaypointCoordinates?.longitude;
+    const endLat = nextGps?.currentWaypointCoordinates?.latitude;
+    const endLon = nextGps?.currentWaypointCoordinates?.longitude;
+
+    const lengthInKm =
+      startLat && startLon && endLat && endLon
+        ? calculateDistanceInKm(startLat, startLon, endLat, endLon)
+        : 0;
 
     const rowData = {
       srNo: index + 1,
-      timestamp: formatDate( wp.timestamp ),
+      timestamp: formatDate(wp.timestamp),
       userId: gpsDetails.userId || "",
       district: gpsDetails.district || "",
       routeStartPoint: gpsDetails.routeStartPoint || "",
-      routeEndPoint: wp.routeEndingPoint || "", // Assuming routeEndingPoint from WaypointSchema
-      lengthInKm: (gpsDetails.lengthInMeter || 0) / 1000, // Convert meters to KM
-      startCoords: `${gpsDetails.startPointCoordinates?.latitude || ""}, ${
-        gpsDetails.startPointCoordinates?.longitude || ""
-      }`,
-      endCoords: `${gpsDetails.currentWaypointCoordinates?.latitude || ""}, ${
+      routeEndPoint: waypoints[index + 1]?.gpsDetails?.routeStartPoint || "", // Assuming routeEndingPoint from WaypointSchema
+      lengthInKm: Number(lengthInKm.toFixed(3)),
+
+      // Convert meters to KM
+      startCoords: `${gpsDetails.currentWaypointCoordinates?.latitude || ""}, ${
         gpsDetails.currentWaypointCoordinates?.longitude || ""
+      }`,
+      endCoords: `${
+        waypoints[index + 1]?.gpsDetails.currentWaypointCoordinates?.latitude ||
+        ""
+      }, ${
+        waypoints[index + 1]?.gpsDetails.currentWaypointCoordinates
+          ?.longitude || ""
       }`, // Using current waypoint for end coords
       substationName: gpsDetails.substationName || "",
       feederName: gpsDetails.feederName || "",
@@ -815,45 +857,93 @@ function setupMaterialSheet(sheet, waypoints) {
       if (typeof rowData[key] === "number" && columnDef) {
         // Only apply numeric format if the column is one of the material quantities
         const materialKeys = [
-          "ltDistributionBox3Phase", "abSwitch", "anchorRod", "anchoringAssembly",
-          "angle4Feet", "angle9Feet", "basePlat", "channel4Feet", "channel9Feet",
-          "doChannel", "doChannelBackClamp", "doFuse", "discHardware",
-          "discInsulatorPolymeric", "discInsulatorPorcelain", "dtrBaseChannel",
-          "dtrSpottingAngle", "dtrSpottingAngleWithClamp", "dvcConductor",
-          "earthingConductor", "elbow", "eyeBolt", "giPin", "giPipe", "greeper",
-          "guyInsulator", "iHuckClamp", "lightingArrestor", "pinInsulatorPolymeric",
-          "pinInsulatorPorcelain", "poleEarthing", "sideClamp", "spottingAngle",
-          "spottingChannel", "stayClamp", "stayInsulator", "stayRoad", "stayWire712",
-          "suspensionAssemblyClamp", "topChannel", "topClamp", "turnBuckle",
-          "vCrossArm", "vCrossArmClamp", "xBressing", "earthingCoil"
+          "ltDistributionBox3Phase",
+          "abSwitch",
+          "anchorRod",
+          "anchoringAssembly",
+          "angle4Feet",
+          "angle9Feet",
+          "basePlat",
+          "channel4Feet",
+          "channel9Feet",
+          "doChannel",
+          "doChannelBackClamp",
+          "doFuse",
+          "discHardware",
+          "discInsulatorPolymeric",
+          "discInsulatorPorcelain",
+          "dtrBaseChannel",
+          "dtrSpottingAngle",
+          "dtrSpottingAngleWithClamp",
+          "dvcConductor",
+          "earthingConductor",
+          "elbow",
+          "eyeBolt",
+          "giPin",
+          "giPipe",
+          "greeper",
+          "guyInsulator",
+          "iHuckClamp",
+          "lightingArrestor",
+          "pinInsulatorPolymeric",
+          "pinInsulatorPorcelain",
+          "poleEarthing",
+          "sideClamp",
+          "spottingAngle",
+          "spottingChannel",
+          "stayClamp",
+          "stayInsulator",
+          "stayRoad",
+          "stayWire712",
+          "suspensionAssemblyClamp",
+          "topChannel",
+          "topClamp",
+          "turnBuckle",
+          "vCrossArm",
+          "vCrossArmClamp",
+          "xBressing",
+          "earthingCoil",
         ];
         if (materialKeys.includes(key)) {
-            row.getCell(colIndex + 1).numFmt = "0"; // ExcelJS is 1-indexed for columns
+          row.getCell(colIndex + 1).numFmt = "0";
         }
       }
     });
   });
 
-  // Add totals row
-  // The total row will be at `waypoints.length + 2` because of the initial blank row and the header row.
   const totalRow = sheet.addRow([]);
   totalRow.height = 15;
-  totalRow.getCell(1).value = "Total Length:"; // Column A
-  totalRow.getCell(7).value = { formula: `SUM(G3:G${waypoints.length + 2})` }; // Sums from G3 (first data row) to the row before the total row
-  totalRow.getCell(7).numFmt = "0.000"; // Format for length in KM
-  totalRow.getCell(15).value = "Total :"; // Column O (Transformer KV) - Assuming this is where you want "Total" text before material totals
+  totalRow.getCell(1).value = "Total Length:";
+  totalRow.getCell(7).value = { formula: `SUM(G3:G${waypoints.length + 2})` };
+  totalRow.getCell(7).numFmt = "0.000";
+  totalRow.getCell(15).value = "Total :";
 
-  // Add totals for material columns
-  const firstMaterialColIndex = columns.findIndex((col) => col.key === "ltDistributionBox3Phase") + 1;
-  const lastMaterialColIndex = columns.findIndex((col) => col.key === "earthingCoil") + 1; // Corrected to use the actual last material key
+  const materialRanges = [
+    // General materials (P-BI)
+    {
+      firstCol:
+        columns.findIndex((col) => col.key === "ltDistributionBox3Phase") + 1,
+      lastCol: columns.findIndex((col) => col.key === "earthingCoil") + 1,
+    },
+    // Pole materials (BO-DG)
+    {
+      firstCol:
+        columns.findIndex((col) => col.key === "poleltDistributionBox3Phase") +
+        1,
+      lastCol: columns.findIndex((col) => col.key === "poleearthingCoil") + 1,
+    },
+  ];
 
-  for (let i = firstMaterialColIndex; i <= lastMaterialColIndex; i++) {
-    const colLetter = getColumnLetter(i); // Helper function to get column letter
-    totalRow.getCell(i).value = {
-      formula: `SUM(${colLetter}3:${colLetter}${waypoints.length + 1})`, // Sums from data start to end
-    };
-    totalRow.getCell(i).numFmt = "0"; // Format for material counts
-  }
+  // Apply totals to all material columns
+  materialRanges.forEach((range) => {
+    for (let i = range.firstCol; i <= range.lastCol; i++) {
+      const colLetter = getColumnLetter(i);
+      totalRow.getCell(i).value = {
+        formula: `SUM(${colLetter}3:${colLetter}${waypoints.length + 1})`,
+      };
+      totalRow.getCell(i).numFmt = "0";
+    }
+  });
 
   // Style totals row
   totalRow.eachCell((cell) => {
@@ -868,50 +958,37 @@ function setupMaterialSheet(sheet, waypoints) {
   });
 }
 
-// function formatDate(date) {
-//   if (!date) return "";
-//   const d = new Date(date);
-//   const pad = (num) => num.toString().padStart(2, "0");
-
-//   let hours = d.getHours();
-//   const ampm = hours >= 12 ? "pm" : "am";
-//   hours = hours % 12;
-//   hours = hours ? hours : 12; // The hour '0' should be '12'
-
-//   return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}_${hours}.${pad(
-//     d.getMinutes()
-//   )}${ampm}`;
-// }
+// Style totals row
 
 function formatDate(timestamp) {
   if (!timestamp) return "";
-  
+
   try {
     const date = new Date(timestamp);
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
-      console.log('Invalid date:', timestamp);
+      console.log("Invalid date:", timestamp);
       return "";
     }
 
     const pad = (num) => num.toString().padStart(2, "0");
-    
+
     // Get local time components
     const day = pad(date.getDate());
     const month = pad(date.getMonth() + 1);
     const year = date.getFullYear();
-    
+
     let hours = date.getHours();
     const ampm = hours >= 12 ? "pm" : "am";
     hours = hours % 12;
     hours = hours || 12; // Convert 0 to 12
-    
+
     const minutes = pad(date.getMinutes());
-    
+
     return `${day}-${month}-${year}_${hours}.${minutes}${ampm}`;
   } catch (e) {
-    console.log('Error formatting date:', e);
+    console.log("Error formatting date:", e);
     return "";
   }
 }

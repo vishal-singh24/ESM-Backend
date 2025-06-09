@@ -83,7 +83,7 @@ exports.downloadPdf = async (req, res) => {
 
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${sanitizedFeederName}_waypoints_by_${empId}.pdf`
+      `attachment; filename=${sanitizedFeederName} waypoints by ${empId}.pdf`
     );
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Length", pdfBuffer.length);
