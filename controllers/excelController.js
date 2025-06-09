@@ -58,7 +58,8 @@ exports.downloadExcel = async (req, res) => {
         name: waypoint.name || `Waypoint ${waypoint._id}`,
         description: waypoint.description || "",
         transformerType: waypoint.transformerType,
-        poleDetails: waypoint.poleDetails,
+        distanceFromPrevious: waypoint.distanceFromPrevious || 0,
+        poleDetails: waypoint.poleDetails[0],
         gpsDetails: waypoint.gpsDetails[0], // Get first gpsDetails item
         routeType: waypoint.routeType,
         timestamp: waypoint.timestamp ,
